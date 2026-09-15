@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EE27 Stage 4 — Tracking Dashboard</title>
+<style>
+:root{
+  --usat-red:#A80C34; --usat-blue:#002A5C; --usat-blue-dark:#001F47;
+  --usat-gray-dark:#1A1A1A; --usat-gray-mid:#4A4A4A;
+  --usat-gray-light:#F2F2F2; --usat-gray-border:#CCCCCC;
+  --usat-red-tint:#F5E0E5; --usat-blue-tint:#E6EAF0;
+  --font-heading:"Univers Black","Arial Black",Impact,sans-serif;
+  --font-body:"Univers Roman",Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--usat-gray-dark);background:#fff;font-size:15px}
+header{background:var(--usat-blue);color:#fff;padding:16px 26px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+header .logo{height:60px}
+header h1{font-family:var(--font-heading);font-size:1.35rem;letter-spacing:.5px}
+header .sub{font-size:.8rem;color:rgba(255,255,255,.85);font-style:italic;margin-top:3px}
+.stagebar{background:var(--usat-blue-dark);padding:8px 26px;display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem}
+.stagebar a{color:rgba(255,255,255,.75);text-decoration:none;font-family:var(--font-heading);letter-spacing:.5px}
+.stagebar a.here{color:#fff;border-bottom:2px solid var(--usat-red)}
+.stagebar a:hover{color:#fff}
+.container{max-width:1400px;margin:0 auto;padding:20px 24px 60px}
+.gate{max-width:420px;margin:70px auto;border:1px solid var(--usat-gray-border);border-radius:4px;padding:26px;background:var(--usat-gray-light);text-align:center}
+.gate h2{font-family:var(--font-heading);color:var(--usat-blue);font-size:1rem;margin-bottom:6px}
+.gate p{font-size:.8rem;color:var(--usat-gray-mid);margin-bottom:14px}
+.gate input{width:100%;padding:9px;border:1px solid var(--usat-gray-border);border-radius:3px;font-size:.9rem;text-align:center}
+.gate .err{color:var(--usat-red);font-size:.78rem;margin-top:8px;font-weight:bold;min-height:1em}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:6px 0 16px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font-family:var(--font-heading);font-size:.7rem;letter-spacing:.5px;padding:8px 14px;border-radius:4px;border:1px solid var(--usat-blue);background:#fff;color:var(--usat-blue);cursor:pointer}
+.tab.on{background:var(--usat-blue);color:#fff}
+.btn{font-family:var(--font-heading);font-size:.68rem;letter-spacing:.5px;padding:8px 13px;border-radius:4px;border:none;background:var(--usat-red);color:#fff;cursor:pointer}
+.btn:hover{background:#8a0a2b}
+.btn.ghost{background:#fff;color:var(--usat-blue);border:1px solid var(--usat-blue)}
+.btn.ghost:hover{background:var(--usat-blue-tint)}
+.stamp{font-size:.72rem;color:var(--usat-gray-mid);margin-left:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{border:1px solid var(--usat-gray-border);border-radius:4px;padding:12px 14px;background:var(--usat-blue-tint)}
+.kpi .n{font-family:var(--font-heading);font-size:1.7rem;color:var(--usat-blue)}
+.kpi.red{background:var(--usat-red-tint)}
+.kpi.red .n{color:var(--usat-red)}
+.kpi .l{font-size:.68rem;font-weight:bold;color:var(--usat-gray-mid);letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+.kpi .d{font-size:.7rem;color:var(--usat-gray-mid);margin-top:2px}
+table.rpt{border-collapse:collapse;width:100%;font-size:.8rem}
+table.rpt th{background:var(--usat-blue);color:#fff;font-family:var(--font-heading);font-weight:normal;font-size:.66rem;letter-spacing:.4px;padding:8px 8px;border:1px solid var(--usat-gray-border);text-align:left;cursor:pointer;white-space:nowrap}
+table.rpt td{border:1px solid var(--usat-gray-border);padding:6px 8px;vertical-align:top}
+table.rpt tr:nth-child(even) td{background:#F8FAFC}
+table.rpt tr.clickable{cursor:pointer}
+table.rpt tr.clickable:hover td{background:var(--usat-blue-tint)}
+td.num,th.num{text-align:center !important;white-space:nowrap}
+.slotpill{display:inline-block;background:var(--usat-red);color:#fff;font-family:var(--font-heading);font-size:.62rem;padding:1px 7px;border-radius:3px}
+.unsched{color:var(--usat-gray-mid);font-style:italic;font-size:.7rem}
+.roleb{display:inline-block;font-size:.62rem;font-weight:bold;padding:1px 7px;border-radius:8px;background:var(--usat-blue-tint);color:var(--usat-blue)}
+.roleb.rd{background:#E6F3E8;color:#1B6E3C}
+.roleb.oth{background:var(--usat-gray-light);color:var(--usat-gray-mid)}
+.stars{color:var(--usat-red);letter-spacing:1px}
+h3.sec{font-family:var(--font-heading);color:var(--usat-blue);font-size:.95rem;margin:22px 0 8px}
+.fb-card{border:1px solid var(--usat-gray-border);border-radius:4px;padding:10px 12px;margin-bottom:10px;background:#fff}
+.fb-card .who{font-size:.78rem;font-weight:bold}
+.fb-card .meta{font-size:.7rem;color:var(--usat-gray-mid);margin:2px 0 4px}
+.fb-card .cmt{font-size:.82rem;line-height:1.45}
+.fb-card .fu{display:inline-block;margin-top:5px;font-size:.66rem;font-weight:bold;color:var(--usat-red)}
+select.sel{font-family:var(--font-body);font-size:.82rem;padding:7px;border:1px solid var(--usat-gray-border);border-radius:3px;max-width:100%}
+.empty{font-size:.82rem;color:var(--usat-gray-mid);font-style:italic;padding:14px 4px}
+.hint{font-size:.72rem;color:var(--usat-gray-mid);margin:4px 0 10px}
+footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:center;font-size:.72rem;padding:14px}
+@media(max-width:700px){header .logo{height:44px}}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="https://raw.githubusercontent.com/JustinTrolle/USAT-Images/31de75b5f22d823cd0632e8073e30a658d34e7d7/USA_Triathlon_Education_Logo_Transparent.png" alt="USA Triathlon Education">
+  <div>
+    <h1>ENDURANCE EXCHANGE 2027 — TRACKING DASHBOARD</h1>
+    <div class="sub">Attendee interest, check-ins, session scores &amp; follow-up requests • Internal use only</div>
+  </div>
+</header>
+<div class="stagebar">
+  <a href="ee27-1-session-intake.html">1 · SESSION INTAKE</a>
+  <a href="ee27-2-schedule-builder.html">2 · SCHEDULE BUILDER</a>
+  <a href="ee27-3-participant-dashboard.html">3 · PARTICIPANT DASHBOARD</a>
+  <a class="here" href="ee27-4-tracking-dashboard.html">4 · TRACKING DASHBOARD</a>
+</div>
+<div class="container" id="main"></div>
+<footer>USA Triathlon — EE27 Education Tracking Dashboard • Internal use only</footer>
+<script>
+const SUPA_URL="https://vzwpdsnxstazpfukdbak.supabase.co";
+const SUPA_KEY="sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
+const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+const ROOMS=["Caribbean Ballroom IV–VI (400)","Boca I & II (85)","Boca V & VI (85)","Boca III & IV (85)"];
+const LETTERS=["a","b","c","d"];
+const DAY_META = {"1": {"date":"Friday, January 8","rows":[["9:00 – 9:45 AM","sess",1],["10:00 – 10:45 AM","sess",2],["12:00 – 1:00 PM","key",1],["1:00 – 1:45 PM","sess",3],["2:00 – 2:45 PM","sess",4],["4:00 – 4:45 PM","sess",5],["5:00 – 5:45 PM","sess",6]]},
+"2":{"date":"Saturday, January 9","rows":[["9:00 – 10:00 AM","key",2],["10:00 – 10:45 AM","sess",7],["11:00 – 11:45 AM","sess",8],["1:00 – 1:45 PM","sess",9],["2:00 – 2:45 PM","sess",10],["4:00 – 4:45 PM","sess",11],["5:00 – 5:45 PM","sess",12]]},
+"3":{"date":"Sunday, January 10","rows":[["9:00 – 9:45 AM","key",3],["9:45 – 10:30 AM","key",4],["10:30 – 11:30 AM","key",5],["12:30 – 1:30 PM","key",6],["1:45 – 2:30 PM","sess",13],["2:45 – 3:30 PM","sess",14]]}};
+const SLOTINFO={};const DAYDATES={};
+(function(){
+  for(const d of ["1","2","3"]){
+    DAYDATES[d]=DAY_META[d].date;
+    DAY_META[d].rows.forEach(([time,type,n],ord)=>{
+      if(type==="sess")for(let i=0;i<4;i++)SLOTINFO[n+LETTERS[i]]={day:d,time,room:ROOMS[i],ord};
+      else SLOTINFO["k"+n]={day:d,time,room:"General Session — "+ROOMS[0],ord};
+    });
+  }
+})();
+// conference-wide post-event survey schema (must match the participant dashboard)
+const SAT_OPTS=["Very Satisfied","Satisfied","Neutral","Dissatisfied","Very Dissatisfied","Did Not Attend","N/A"];
+const SURVEY=[
+ {id:"role",t:"multi",q:"Role(s)"},
+ {id:"value",t:"single",q:"Overall value vs. cost"},
+ {id:"experience",t:"single",q:"Overall experience"},
+ {id:"recommend",t:"single",q:"Likelihood to recommend"},
+ {id:"reasons",t:"multi",q:"Reasons for attending"},
+ {id:"recorded",t:"single",q:"Plans to view recorded sessions"},
+ {id:"travel",t:"single",q:"Travel method"},
+ {id:"sat",t:"matrix",q:"Satisfaction ratings",rows:[
+   ["sat_location","Location (Orlando, FL)"],["sat_time","Time of Year"],["sat_hotel","Hotel Accommodations"],
+   ["sat_same","Accommodation + Conference same location"],["sat_food","Quality of provided food"],
+   ["sat_quality","Quality of educational sessions"],["sat_variety","Variety of educational sessions"],
+   ["sat_networking","Networking opportunities"],["sat_keynotes","Keynote Speakers"],["sat_expo","Expo"],
+   ["sat_app","Event App"],["sat_comms","Event Communications and Website"],
+   ["sat_ceus","Ability to earn CEUs"],["sat_hh_fri","Partner Happy Hour (Friday)"],
+   ["sat_hh_sat","Partner Happy Hour (Saturday)"],["sat_funrun","Sunday Fun Run 5K"],
+   ["sat_workouts","Morning Group Workouts"]]},
+ {id:"missing",t:"text",q:"Content that was missing"},
+ {id:"improve",t:"text",q:"Suggestions for improvement"},
+ {id:"thoughts",t:"text",q:"Additional thoughts"},
+ {id:"format",t:"single",q:"In-person vs. virtual preference"},
+ {id:"features",t:"multi",q:"Five most important features"},
+ {id:"loc_cost",t:"single",q:"Location vs. cost priority"},
+ {id:"months",t:"multi",q:"Preferred months"},
+ {id:"week",t:"single",q:"Weekday vs. weekend preference"},
+ {id:"future",t:"single",q:"Plans to attend future years"}
+];
+let PASS=sessionStorage.getItem("ee27_admin_pass")||"";
+let DATA=null,SESS=[],TAB="overview",ROWS=null,ATT=null,SORT={col:"planned",dir:-1},FBFILTER="__all__",TIMER=null;
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function stars(n){return n?"<span class='stars'>"+"★".repeat(n)+"☆".repeat(5-n)+"</span>":"<span class='unsched'>—</span>"}
+function roleB(r){return r==="coach"?"<span class='roleb'>COACH</span>":r==="race_director"?"<span class='roleb rd'>RACE DIR</span>":"<span class='roleb oth'>OTHER</span>"}
+function fmtT(ts){return ts?new Date(ts).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):""}
+// ---------- auth + load ----------
+function gateHTML(msg){
+  return `<div class="gate">
+    <h2>ADMIN ACCESS</h2>
+    <p>Enter the dashboard passcode. Data never leaves Supabase without it.</p>
+    <input id="pass" type="password" placeholder="Passcode" onkeydown="if(event.key==='Enter')login()">
+    <div class="err">${esc(msg||"")}</div>
+    <button class="btn" style="margin-top:6px" onclick="login()">OPEN DASHBOARD</button>
+  </div>`;
+}
+async function login(){
+  const p=document.getElementById("pass").value.trim();
+  if(!p)return;
+  PASS=p;
+  const ok=await loadData(true);
+  if(ok){sessionStorage.setItem("ee27_admin_pass",PASS);startAuto();}
+}
+function logout(){PASS="";sessionStorage.removeItem("ee27_admin_pass");if(TIMER)clearInterval(TIMER);DATA=null;render();}
+function startAuto(){if(TIMER)clearInterval(TIMER);TIMER=setInterval(()=>loadData(false),60000);}
+async function loadData(isLogin){
+  try{
+    const [rp,rs]=await Promise.all([
+      fetch(SUPA_URL+"/rest/v1/rpc/ee27_admin_data",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS})}),
+      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,slot,day&order=title",{headers:H})
+    ]);
+    if(!rp.ok){
+      DATA=null;
+      document.getElementById("main").innerHTML=gateHTML(isLogin?"Incorrect passcode — try again.":"Session expired — sign in again.");
+      return false;
+    }
+    DATA=await rp.json();
+    if(rs.ok)SESS=await rs.json();
+    summarize();render();
+    return true;
+  }catch(e){
+    document.getElementById("main").innerHTML=gateHTML("Connection problem — check your network and try again.");
+    return false;
+  }
+}
+// ---------- aggregation ----------
+function summarize(){
+  ATT={};(DATA.attendees||[]).forEach(a=>ATT[a.id]=a);
+  ROWS={};
+  SESS.forEach(k=>{ROWS[k.key]={key:k.key,slot:k.slot||null,title:k.title,speaker:k.speaker,
+    planned:0,pc:0,prd:0,po:0,checked:0,resp:0,sumC:0,nC:0,sumP:0,nP:0,fu:0};});
+  (DATA.selections||[]).forEach(s=>{
+    if(!s.selected)return;const r=ROWS[s.session_key];if(!r)return;
+    r.planned++;const a=ATT[s.attendee_id];
+    if(a){if(a.role==="coach")r.pc++;else if(a.role==="race_director")r.prd++;else r.po++;}
+  });
+  (DATA.attendance||[]).forEach(t=>{const r=ROWS[t.session_key];if(r)r.checked++;});
+  (DATA.feedback||[]).forEach(f=>{
+    const r=ROWS[f.session_key];if(!r)return;
+    r.resp++;
+    if(f.content_rating){r.sumC+=f.content_rating;r.nC++;}
+    if(f.presenter_rating){r.sumP+=f.presenter_rating;r.nP++;}
+    if(f.wants_followup)r.fu++;
+  });
+}
+function avg(sum,n){return n?(sum/n).toFixed(2):""}
+function slotLabel(slot){
+  if(!slot)return "<span class='unsched'>not scheduled</span>";
+  const i=SLOTINFO[slot];
+  return `<span class="slotpill">${esc(slot.toUpperCase())}</span>` + (i?`<div style="font-size:.66rem;color:var(--usat-gray-mid);margin-top:2px">${esc(DAYDATES[i.day]||"")}<br>${esc(i.time)}</div>`:"");
+}
+// ---------- rendering ----------
+function render(){
+  const m=document.getElementById("main");
+  if(!DATA){m.innerHTML=gateHTML("");return}
+  const a=DATA.attendees||[];
+  const nC=a.filter(x=>x.role==="coach").length, nRD=a.filter(x=>x.role==="race_director").length, nO=a.length-nC-nRD;
+  const totSel=(DATA.selections||[]).filter(s=>s.selected).length;
+  const totChk=(DATA.attendance||[]).length;
+  const totFb=(DATA.feedback||[]).length;
+  const totFu=(DATA.feedback||[]).filter(f=>f.wants_followup).length;
+  let html=`<div class="ctrl">
+    <div class="tabs">
+      ${["overview","feedback","followups","attendees","eventsurvey"].map(t=>`<button class="tab ${TAB===t?"on":""}" onclick="setTab('${t}')">${{overview:"SESSION ROLLUP",feedback:"FEEDBACK",followups:"FOLLOW-UP LIST",attendees:"ATTENDEES",eventsurvey:"EVENT SURVEY"}[t]}</button>`).join("")}
+    </div>
+    <button class="btn ghost" onclick="loadData(false)">&#8635; REFRESH</button>
+    <button class="btn ghost" onclick="logout()">SIGN OUT</button>
+    <span class="stamp">Data as of ${fmtT(DATA.generated_at)} • auto-refreshes every 60s</span>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="n">${a.length}</div><div class="l">Registered Attendees</div><div class="d">${nC} coaches · ${nRD} RDs · ${nO} other</div></div>
+    <div class="kpi"><div class="n">${totSel}</div><div class="l">Schedule Selections</div><div class="d">"Add to my schedule" taps</div></div>
+    <div class="kpi"><div class="n">${totChk}</div><div class="l">Session Check-Ins</div><div class="d">actual attendance taps</div></div>
+    <div class="kpi"><div class="n">${totFb}</div><div class="l">Feedback Responses</div><div class="d">ratings &amp; comments</div></div>
+    <div class="kpi red"><div class="n">${totFu}</div><div class="l">Follow-Up Requests</div><div class="d">your outreach list</div></div>
+    <div class="kpi"><div class="n">${(DATA.event_survey||[]).length}</div><div class="l">Event Survey Responses</div><div class="d">${DATA.survey_opens_at&&new Date(DATA.survey_opens_at)>new Date()?"opens "+new Date(DATA.survey_opens_at).toLocaleDateString([],{month:"short",day:"numeric"}):"conference-wide survey"}</div></div>
+  </div>`;
+  if(TAB==="overview")html+=overviewHTML();
+  else if(TAB==="feedback")html+=feedbackHTML();
+  else if(TAB==="followups")html+=followupsHTML();
+  else if(TAB==="eventsurvey")html+=eventSurveyHTML();
+  else html+=attendeesHTML();
+  m.innerHTML=html;
+}
+function setTab(t){TAB=t;render();}
+function setSort(col){SORT=(SORT.col===col)?{col,dir:-SORT.dir}:{col,dir:-1};render();}
+function sortedRows(){
+  const rows=Object.values(ROWS);
+  const c=SORT.col,d=SORT.dir;
+  rows.sort((x,y)=>{
+    let vx,vy;
+    if(c==="title"){vx=x.title.toLowerCase();vy=y.title.toLowerCase();return vx<vy?-d:vx>vy?d:0}
+    if(c==="slot"){vx=x.slot&&SLOTINFO[x.slot]?Number(SLOTINFO[x.slot].day)*100+SLOTINFO[x.slot].ord:1000;vy=y.slot&&SLOTINFO[y.slot]?Number(SLOTINFO[y.slot].day)*100+SLOTINFO[y.slot].ord:1000;return (vx-vy)*(-d)}
+    if(c==="avgC"){vx=x.nC?x.sumC/x.nC:-1;vy=y.nC?y.sumC/y.nC:-1;}
+    else if(c==="avgP"){vx=x.nP?x.sumP/x.nP:-1;vy=y.nP?y.sumP/y.nP:-1;}
+    else{vx=x[c]||0;vy=y[c]||0;}
+    return (vy-vx)*d===0?(x.title<y.title?-1:1):(vy-vx)*d;
+  });
+  return rows;
+}
+function overviewHTML(){
+  const rows=sortedRows();
+  let h=`<h3 class="sec">SESSION ROLLUP — PLANNED vs ACTUAL vs SCORES</h3>
+  <div class="hint">Click a column header to sort. Click any row to jump to its feedback. Planned = schedule selections on the participant dashboard; Checked in = on-site taps.</div>
+  <div style="margin-bottom:8px"><button class="btn" onclick="exportRollup()">&#11015; EXPORT ROLLUP CSV</button></div>
+  <div style="overflow-x:auto"><table class="rpt">
+  <tr>
+    <th onclick="setSort('slot')">SLOT / TIME</th>
+    <th onclick="setSort('title')">SESSION</th>
+    <th>SPEAKER</th>
+    <th class="num" onclick="setSort('planned')">PLANNED</th>
+    <th class="num">C / RD / O</th>
+    <th class="num" onclick="setSort('checked')">CHECKED IN</th>
+    <th class="num" onclick="setSort('resp')">RESP</th>
+    <th class="num" onclick="setSort('avgC')">AVG CONTENT</th>
+    <th class="num" onclick="setSort('avgP')">AVG PRESENTER</th>
+    <th class="num" onclick="setSort('fu')">FOLLOW-UPS</th>
+  </tr>`;
+  for(const r of rows){
+    h+=`<tr class="clickable" onclick="FBFILTER='${esc(r.key)}';setTab('feedback')">
+      <td>${slotLabel(r.slot)}</td>
+      <td><b>${esc(r.title)}</b></td>
+      <td>${esc(r.speaker)}</td>
+      <td class="num"><b>${r.planned||""}</b></td>
+      <td class="num">${r.planned?`${r.pc} / ${r.prd} / ${r.po}`:""}</td>
+      <td class="num">${r.checked||""}</td>
+      <td class="num">${r.resp||""}</td>
+      <td class="num">${avg(r.sumC,r.nC)}</td>
+      <td class="num">${avg(r.sumP,r.nP)}</td>
+      <td class="num">${r.fu||""}</td>
+    </tr>`;
+  }
+  return h+"</table></div>";
+}
+function fbCardHTML(f){
+  const a=ATT[f.attendee_id]||{};
+  return `<div class="fb-card">
+    <span class="who">${esc(a.name||"Unknown attendee")}</span> ${roleB(a.role)}
+    <div class="meta">${fmtT(f.submitted_at)}</div>
+    <div class="meta">Content: ${stars(f.content_rating)} &nbsp; Presenter: ${stars(f.presenter_rating)}</div>
+    ${f.comments?`<div class="cmt">${esc(f.comments)}</div>`:""}
+    ${f.wants_followup?`<span class="fu">&#9993; WANTS FOLLOW-UP${f.followup_email?": "+esc(f.followup_email):(a.email?": "+esc(a.email):"")}</span>`:""}
+  </div>`;
+}
+function feedbackHTML(){
+  const opts=Object.values(ROWS).slice().sort((a,b)=>a.title<b.title?-1:1)
+    .map(r=>`<option value="${esc(r.key)}" ${FBFILTER===r.key?"selected":""}>${esc(r.title)}</option>`).join("");
+  let list=(DATA.feedback||[]);
+  if(FBFILTER!=="__all__")list=list.filter(f=>f.session_key===FBFILTER);
+  let h=`<h3 class="sec">FEEDBACK &amp; COMMENTS — GROUPED BY PRESENTATION</h3>
+  <div class="ctrl"><select class="sel" onchange="FBFILTER=this.value;render()">
+    <option value="__all__" ${FBFILTER==="__all__"?"selected":""}>All sessions</option>${opts}</select>
+    <button class="btn" onclick="exportFeedback()">&#11015; EXPORT FEEDBACK CSV</button></div>`;
+  if(!list.length)return h+`<div class="empty">No feedback yet${FBFILTER!=="__all__"?" for this session":""}.</div>`;
+  // group by session
+  const groups={};
+  for(const f of list)(groups[f.session_key]=groups[f.session_key]||[]).push(f);
+  // order groups by schedule position (day/time), unscheduled last, then title
+  const ord=key=>{const r=ROWS[key];if(r&&r.slot&&SLOTINFO[r.slot])return Number(SLOTINFO[r.slot].day)*100+SLOTINFO[r.slot].ord;return 9000};
+  const keys=Object.keys(groups).sort((a,b)=>{
+    const d=ord(a)-ord(b);if(d)return d;
+    const ta=(ROWS[a]||{title:a}).title,tb=(ROWS[b]||{title:b}).title;
+    return ta<tb?-1:1;
+  });
+  for(const key of keys){
+    const r=ROWS[key];
+    const fs=groups[key].slice().sort((x,y)=>x.submitted_at<y.submitted_at?1:-1);
+    let sumC=0,nC=0,sumP=0,nP=0,fu=0;
+    for(const f of fs){
+      if(f.content_rating){sumC+=f.content_rating;nC++;}
+      if(f.presenter_rating){sumP+=f.presenter_rating;nP++;}
+      if(f.wants_followup)fu++;
+    }
+    const slotBit=r&&r.slot?`<span class="slotpill">${esc(r.slot.toUpperCase())}</span> ${SLOTINFO[r.slot]?esc(DAYDATES[SLOTINFO[r.slot].day]+" • "+SLOTINFO[r.slot].time):""}`:`<span class="unsched">not scheduled</span>`;
+    h+=`<div style="background:var(--usat-blue);color:#fff;border-radius:4px 4px 0 0;padding:10px 14px;margin-top:18px">
+      <div style="font-family:var(--font-heading);font-size:.9rem;letter-spacing:.3px">${r?esc(r.title):esc(key)}</div>
+      <div style="font-size:.74rem;color:rgba(255,255,255,.85);margin-top:3px">${r?esc(r.speaker):""} &nbsp;•&nbsp; ${slotBit}</div>
+      <div style="font-size:.74rem;color:rgba(255,255,255,.85);margin-top:3px">${fs.length} response${fs.length===1?"":"s"}
+        ${nC?` &nbsp;•&nbsp; Content avg <b>${(sumC/nC).toFixed(2)}</b>`:""}
+        ${nP?` &nbsp;•&nbsp; Presenter avg <b>${(sumP/nP).toFixed(2)}</b>`:""}
+        ${fu?` &nbsp;•&nbsp; <b>${fu}</b> follow-up request${fu===1?"":"s"}`:""}</div>
+    </div>
+    <div style="border:1px solid var(--usat-gray-border);border-top:none;border-radius:0 0 4px 4px;padding:10px 12px 4px;background:#fafafa">
+      ${fs.map(fbCardHTML).join("")}
+    </div>`;
+  }
+  return h;
+}
+function followupsHTML(){
+  const list=(DATA.feedback||[]).filter(f=>f.wants_followup);
+  let h=`<h3 class="sec">FOLLOW-UP REQUESTS — POST-EVENT OUTREACH LIST</h3>
+  <div style="margin-bottom:8px"><button class="btn" onclick="exportFollowups()">&#11015; EXPORT OUTREACH CSV</button></div>`;
+  if(!list.length)return h+`<div class="empty">No follow-up requests yet.</div>`;
+  h+=`<div style="overflow-x:auto"><table class="rpt"><tr><th>NAME</th><th>ROLE</th><th>EMAIL</th><th>SESSION</th><th>SPEAKER</th><th>REQUESTED</th></tr>`;
+  for(const f of list){
+    const a=ATT[f.attendee_id]||{};const r=ROWS[f.session_key];
+    h+=`<tr><td><b>${esc(a.name||"")}</b></td><td>${roleB(a.role)}</td>
+      <td>${esc(f.followup_email||a.email||"")}</td>
+      <td>${r?esc(r.title):esc(f.session_key)}</td><td>${r?esc(r.speaker):""}</td>
+      <td>${fmtT(f.submitted_at)}</td></tr>`;
+  }
+  return h+"</table></div>";
+}
+function attendeesHTML(){
+  const list=DATA.attendees||[];
+  let h=`<h3 class="sec">REGISTERED ATTENDEES</h3>
+  <div style="margin-bottom:8px"><button class="btn" onclick="exportAttendees()">&#11015; EXPORT ATTENDEES CSV</button></div>`;
+  if(!list.length)return h+`<div class="empty">No registrations yet.</div>`;
+  h+=`<div style="overflow-x:auto"><table class="rpt"><tr><th>NAME</th><th>ROLE</th><th>EMAIL</th><th class="num">PLANNED</th><th class="num">CHECKED IN</th><th>REGISTERED</th><th></th></tr>`;
+  const selBy={},chkBy={};
+  (DATA.selections||[]).forEach(s=>{if(s.selected)selBy[s.attendee_id]=(selBy[s.attendee_id]||0)+1});
+  (DATA.attendance||[]).forEach(t=>{chkBy[t.attendee_id]=(chkBy[t.attendee_id]||0)+1});
+  for(const a of list){
+    const rolesTxt=(a.roles&&a.roles.length)?`<div style="font-size:.66rem;color:var(--usat-gray-mid);margin-top:2px">${esc(a.roles.join(", "))}</div>`:"";
+    h+=`<tr><td><b>${esc(a.name)}</b></td><td>${roleB(a.role)}${rolesTxt}</td><td>${esc(a.email||"")}</td>
+      <td class="num">${selBy[a.id]||""}</td><td class="num">${chkBy[a.id]||""}</td><td>${fmtT(a.created_at)}</td>
+      <td class="num"><button class="btn" style="background:#fff;color:var(--usat-red);border:1px solid var(--usat-red);padding:4px 9px;font-size:.6rem" onclick="removeAttendee('${a.id}')" title="Permanently remove this attendee and all their selections, check-ins, feedback, and survey response">✕ REMOVE</button></td></tr>`;
+  }
+  return h+"</table></div>";
+}
+// ---------- event survey ----------
+function tally(list,getter){
+  const c={};let n=0;
+  for(const v of list){
+    const vals=getter(v);if(vals==null)continue;
+    for(const x of Array.isArray(vals)?vals:[vals]){c[x]=(c[x]||0)+1;n++;}
+  }
+  return {c,n};
+}
+function barRow(label,count,max,total){
+  const pct=total?Math.round(count/total*100):0;
+  const w=max?Math.round(count/max*100):0;
+  return `<tr><td style="width:46%">${esc(label)}</td>
+    <td style="width:40%"><div style="background:var(--usat-blue-tint);border-radius:3px;height:14px;position:relative"><div style="background:var(--usat-blue);width:${w}%;height:14px;border-radius:3px"></div></div></td>
+    <td class="num" style="width:14%"><b>${count}</b> (${pct}%)</td></tr>`;
+}
+function eventSurveyHTML(){
+  const list=DATA.event_survey||[];
+  let h=`<h3 class="sec">CONFERENCE-WIDE POST-EVENT SURVEY — ${list.length} RESPONSE${list.length===1?"":"S"}</h3>
+  <div style="margin-bottom:8px"><button class="btn" onclick="exportEventSurvey()">&#11015; EXPORT SURVEY CSV</button></div>`;
+  if(DATA.survey_opens_at)h+=`<div class="hint">Survey opens to participants: ${new Date(DATA.survey_opens_at).toLocaleString([],{weekday:"long",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"})}. Change with: <code>update ee27_config set survey_opens_at = '...' where id='main';</code></div>`;
+  if(!list.length)return h+`<div class="empty">No survey responses yet.</div>`;
+  for(const q of SURVEY){
+    if(q.t==="matrix"){
+      h+=`<h3 class="sec">${esc(q.q.toUpperCase())}</h3><div style="overflow-x:auto"><table class="rpt"><tr><th>ITEM</th>${SAT_OPTS.map(o=>`<th class="num">${esc(o.replace("Very ","V. ").replace("Did Not Attend","DNA"))}</th>`).join("")}<th class="num">AVG*</th></tr>`;
+      for(const[rid,label]of q.rows){
+        const {c}=tally(list,v=>v.answers[rid]);
+        const score={"Very Satisfied":5,"Satisfied":4,"Neutral":3,"Dissatisfied":2,"Very Dissatisfied":1};
+        let sum=0,n=0;
+        for(const[k,cnt]of Object.entries(c))if(score[k]){sum+=score[k]*cnt;n+=cnt;}
+        h+=`<tr><td><b>${esc(label)}</b></td>${SAT_OPTS.map(o=>`<td class="num">${c[o]||""}</td>`).join("")}<td class="num"><b>${n?(sum/n).toFixed(2):""}</b></td></tr>`;
+      }
+      h+=`</table></div><div class="hint">*Average of 1–5 satisfaction responses; “Did Not Attend” and “N/A” excluded.</div>`;
+    }else if(q.t==="text"){
+      const answers=list.filter(v=>v.answers[q.id]);
+      if(!answers.length)continue;
+      h+=`<h3 class="sec">${esc(q.q.toUpperCase())} <span class="hint" style="display:inline">(${answers.length})</span></h3>`;
+      for(const v of answers){
+        const a=ATT[v.attendee_id]||{};
+        h+=`<div class="fb-card"><span class="who">${esc(a.name||"Unknown attendee")}</span> ${roleB(a.role)}
+        <div class="meta">${fmtT(v.submitted_at)}</div>
+        <div class="cmt">${esc(v.answers[q.id])}</div></div>`;
+      }
+    }else{
+      const {c,n}=tally(list,v=>v.answers[q.id]);
+      if(!n)continue;
+      const entries=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+      const max=entries[0][1];
+      h+=`<h3 class="sec">${esc(q.q.toUpperCase())}</h3><table class="rpt" style="max-width:800px">${entries.map(([k,cnt])=>barRow(k,cnt,max,list.length)).join("")}</table>`;
+    }
+  }
+  return h;
+}
+function exportEventSurvey(){
+  const list=DATA.event_survey||[];
+  const cols=[];
+  for(const q of SURVEY){if(q.t==="matrix")q.rows.forEach(([rid,label])=>cols.push([rid,label]));else cols.push([q.id,q.q]);}
+  dlCSV("EE27_event_survey.csv",list.map(v=>{
+    const a=ATT[v.attendee_id]||{};
+    const row={name:a.name||"",role:a.role||"",email:a.email||"",submitted_at:v.submitted_at};
+    for(const[id,label]of cols){const x=v.answers[id];row[label]=Array.isArray(x)?x.join("; "):(x||"");}
+    return row;
+  }));
+}
+async function removeAttendee(id){
+  const a=ATT[id]||{};
+  if(!confirm(`Permanently remove "${a.name||"this attendee"}"?\n\nThis also deletes ALL of their data: schedule selections, check-ins, session feedback, and their event survey response. This cannot be undone.`))return;
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_delete_attendee",{method:"POST",headers:H,
+      body:JSON.stringify({p_pass:PASS,p_attendee:id})});
+    if(!r.ok){alert("Remove failed — check your connection and passcode.");return}
+    loadData(false);
+  }catch(e){alert("Remove failed — network problem.")}
+}
+// ---------- CSV export ----------
+function dlCSV(name,rows){
+  if(!rows.length){alert("Nothing to export yet.");return}
+  const cols=Object.keys(rows[0]);
+  const q=v=>{v=v==null?"":String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const csv=cols.join(",")+"\n"+rows.map(r=>cols.map(c=>q(r[c])).join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}));
+  a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+function exportRollup(){
+  dlCSV("EE27_session_rollup.csv",sortedRows().map(r=>({
+    slot:r.slot||"",day:r.slot&&SLOTINFO[r.slot]?DAYDATES[SLOTINFO[r.slot].day]:"",time:r.slot&&SLOTINFO[r.slot]?SLOTINFO[r.slot].time:"",
+    session:r.title,speaker:r.speaker,planned:r.planned,planned_coaches:r.pc,planned_race_directors:r.prd,planned_other:r.po,
+    checked_in:r.checked,responses:r.resp,avg_content:avg(r.sumC,r.nC),avg_presenter:avg(r.sumP,r.nP),followup_requests:r.fu})));
+}
+function exportFeedback(){
+  dlCSV("EE27_feedback_detail.csv",(DATA.feedback||[]).map(f=>{const a=ATT[f.attendee_id]||{};const r=ROWS[f.session_key];
+    return {session:r?r.title:f.session_key,speaker:r?r.speaker:"",name:a.name||"",role:a.role||"",
+      content_rating:f.content_rating||"",presenter_rating:f.presenter_rating||"",comments:f.comments||"",
+      wants_followup:f.wants_followup?"yes":"no",followup_email:f.followup_email||a.email||"",submitted_at:f.submitted_at};}));
+}
+function exportFollowups(){
+  dlCSV("EE27_followup_outreach.csv",(DATA.feedback||[]).filter(f=>f.wants_followup).map(f=>{const a=ATT[f.attendee_id]||{};const r=ROWS[f.session_key];
+    return {name:a.name||"",role:a.role||"",email:f.followup_email||a.email||"",session:r?r.title:f.session_key,speaker:r?r.speaker:"",requested_at:f.submitted_at};}));
+}
+function exportAttendees(){
+  dlCSV("EE27_attendees.csv",(DATA.attendees||[]).map(a=>({name:a.name,role:a.role,roles:(a.roles||[]).join("; "),email:a.email||"",registered_at:a.created_at})));
+}
+// ---------- init ----------
+if(PASS){loadData(false).then(ok=>{if(ok)startAuto();});}
+else render();
+</script>
+</body>
+</html>

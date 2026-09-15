@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EE27 Stage 1 — Session Intake</title>
+<style>
+:root{
+  --usat-red:#A80C34; --usat-blue:#002A5C; --usat-blue-dark:#001F47;
+  --usat-gray-dark:#1A1A1A; --usat-gray-mid:#4A4A4A;
+  --usat-gray-light:#F2F2F2; --usat-gray-border:#CCCCCC;
+  --usat-red-tint:#F5E0E5; --usat-blue-tint:#E6EAF0;
+  --font-heading:"Univers Black","Arial Black",Impact,sans-serif;
+  --font-body:"Univers Roman",Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--usat-gray-dark);background:#fff;font-size:15px}
+header{background:var(--usat-blue);color:#fff;padding:16px 26px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+header .logo{height:60px}
+header h1{font-family:var(--font-heading);font-size:1.3rem;letter-spacing:.5px}
+header .sub{font-size:.8rem;color:rgba(255,255,255,.85);font-style:italic;margin-top:3px}
+.stagebar{background:var(--usat-blue-dark);padding:8px 26px;display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem}
+.stagebar a{color:rgba(255,255,255,.75);text-decoration:none;font-family:var(--font-heading);letter-spacing:.5px}
+.stagebar a.here{color:#fff;border-bottom:2px solid var(--usat-red)}
+.stagebar a:hover{color:#fff}
+.container{max-width:1250px;margin:0 auto;padding:20px 24px 60px}
+.gate{max-width:420px;margin:70px auto;border:1px solid var(--usat-gray-border);border-radius:4px;padding:26px;background:var(--usat-gray-light);text-align:center}
+.gate h2{font-family:var(--font-heading);color:var(--usat-blue);font-size:1rem;margin-bottom:6px}
+.gate p{font-size:.8rem;color:var(--usat-gray-mid);margin-bottom:14px}
+.gate input{width:100%;padding:9px;border:1px solid var(--usat-gray-border);border-radius:3px;font-size:.9rem;text-align:center}
+.gate .err{color:var(--usat-red);font-size:.78rem;margin-top:8px;font-weight:bold;min-height:1em}
+.btn{font-family:var(--font-heading);font-size:.7rem;letter-spacing:.5px;padding:9px 15px;border-radius:4px;border:none;background:var(--usat-red);color:#fff;cursor:pointer}
+.btn:hover{background:#8a0a2b}
+.btn.ghost{background:#fff;color:var(--usat-blue);border:1px solid var(--usat-blue)}
+.btn.ghost:hover{background:var(--usat-blue-tint)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+h3.sec{font-family:var(--font-heading);color:var(--usat-blue);font-size:.95rem;margin:22px 0 8px}
+.panel{border:1px solid var(--usat-gray-border);border-radius:4px;padding:16px;background:#fafafa;margin-bottom:18px}
+.panel p{font-size:.82rem;line-height:1.5;margin-bottom:8px}
+.panel ol{font-size:.82rem;line-height:1.6;padding-left:20px;margin-bottom:8px}
+.drop{border:2px dashed var(--usat-gray-border);border-radius:4px;padding:26px;text-align:center;color:var(--usat-gray-mid);font-size:.85rem;background:#fff;cursor:pointer}
+.drop.on{border-color:var(--usat-red);background:var(--usat-red-tint)}
+textarea{width:100%;min-height:90px;border:1px solid var(--usat-gray-border);border-radius:3px;padding:8px;font-size:.78rem;font-family:monospace;margin-top:10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.kpi{border:1px solid var(--usat-gray-border);border-radius:4px;padding:12px 14px;background:var(--usat-blue-tint)}
+.kpi .n{font-family:var(--font-heading);font-size:1.6rem;color:var(--usat-blue)}
+.kpi.red{background:var(--usat-red-tint)} .kpi.red .n{color:var(--usat-red)}
+.kpi.green{background:#E6F3E8} .kpi.green .n{color:#1B6E3C}
+.kpi .l{font-size:.66rem;font-weight:bold;color:var(--usat-gray-mid);letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+table.rpt{border-collapse:collapse;width:100%;font-size:.78rem}
+table.rpt th{background:var(--usat-blue);color:#fff;font-family:var(--font-heading);font-weight:normal;font-size:.64rem;letter-spacing:.4px;padding:8px;border:1px solid var(--usat-gray-border);text-align:left;white-space:nowrap}
+table.rpt td{border:1px solid var(--usat-gray-border);padding:6px 8px;vertical-align:top}
+table.rpt tr:nth-child(even) td{background:#F8FAFC}
+.chip{display:inline-block;font-family:var(--font-heading);font-size:.6rem;letter-spacing:.5px;padding:2px 8px;border-radius:3px;color:#fff}
+.chip.new{background:var(--usat-red)}
+.chip.match{background:var(--usat-blue)}
+.chip.same{background:#8a8a8a}
+.stamp{font-size:.74rem;color:var(--usat-gray-mid)}
+.ok{color:#1B6E3C;font-weight:bold;font-size:.82rem}
+.err{color:var(--usat-red);font-weight:bold;font-size:.82rem}
+footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:center;font-size:.72rem;padding:14px}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="https://raw.githubusercontent.com/JustinTrolle/USAT-Images/31de75b5f22d823cd0632e8073e30a658d34e7d7/USA_Triathlon_Education_Logo_Transparent.png" alt="USA Triathlon Education">
+  <div>
+    <h1>ENDURANCE EXCHANGE 2027 — STAGE 1: SESSION INTAKE</h1>
+    <div class="sub">Import presenter submissions from the Google Sheet into the shared event database</div>
+  </div>
+</header>
+<div class="stagebar">
+  <a class="here" href="ee27-1-session-intake.html">1 · SESSION INTAKE</a>
+  <a href="ee27-2-schedule-builder.html">2 · SCHEDULE BUILDER</a>
+  <a href="ee27-3-participant-dashboard.html">3 · PARTICIPANT DASHBOARD</a>
+  <a href="ee27-4-tracking-dashboard.html">4 · TRACKING DASHBOARD</a>
+</div>
+<div class="container" id="main"></div>
+<footer>USA Triathlon — Endurance Exchange 2027 • Internal planning tool</footer>
+<script>
+const SUPA_URL="https://vzwpdsnxstazpfukdbak.supabase.co";
+const SUPA_KEY="sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
+const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+const SHEET_ID="1gFTyB-rV0xvlsaoJ_6WKOGuEXrmEArtinOt9_KXpriw";
+let PASS=sessionStorage.getItem("ee27_admin_pass")||"";
+let EXISTING=[], PARSED=null, PLAN=null;
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+const norm=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+const lastName=s=>{const p=(s||"").trim().split(/\s+/);return norm(p[p.length-1]||"")};
+const slugify=t=>norm(t).replace(/ /g,"-").slice(0,80).replace(/-+$/,"");
+const trackMap={"Coaches":"coach","Race Directors":"rd","Industry Experts":"industry"};
+// ---------- gate ----------
+function gateHTML(msg){
+  return `<div class="gate">
+    <h2>ADMIN ACCESS</h2>
+    <p>Enter the EE27 admin passcode to manage session intake.</p>
+    <input id="pass" type="password" placeholder="Passcode" onkeydown="if(event.key==='Enter')login()">
+    <div class="err">${esc(msg||"")}</div>
+    <button class="btn" style="margin-top:6px" onclick="login()">OPEN INTAKE</button>
+  </div>`;
+}
+async function login(){
+  const p=document.getElementById("pass").value.trim();
+  if(!p)return;
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_check_pass",{method:"POST",headers:H,body:JSON.stringify({p_pass:p})});
+    const ok=r.ok&&await r.json()===true;
+    if(!ok){document.getElementById("main").innerHTML=gateHTML("Incorrect passcode — try again.");return}
+    PASS=p;sessionStorage.setItem("ee27_admin_pass",p);
+    await start();
+  }catch(e){document.getElementById("main").innerHTML=gateHTML("Connection problem — try again.")}
+}
+// ---------- main ----------
+async function loadExisting(){
+  const r=await fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,sheet_sig,slot,day,source,folder,fmt,track,summary,takeaways,not_selected,contract_sent,contract_signed,content_uploaded,content_created&order=title",{headers:H});
+  EXISTING=r.ok?await r.json():[];
+}
+function byKey(key){return EXISTING.find(s=>s.key===key)}
+async function saveSession(key,patch){
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_save_session",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS,p_key:key,p_patch:patch})});
+    if(!r.ok){alert("Save failed — check your connection and passcode.");return false}
+    return true;
+  }catch(e){alert("Save failed — network problem.");return false}
+}
+async function start(){
+  await loadExisting();
+  render();
+}
+function render(){
+  const m=document.getElementById("main");
+  let html=`<div class="kpis">
+    <div class="kpi"><div class="n">${EXISTING.length}</div><div class="l">Sessions in database</div></div>
+    <div class="kpi green"><div class="n">${EXISTING.filter(s=>s.slot).length}</div><div class="l">Scheduled to a slot</div></div>
+    <div class="kpi red"><div class="n">${EXISTING.filter(s=>!s.slot).length}</div><div class="l">Awaiting a slot</div></div>
+  </div>
+  <div class="panel">
+    <h3 class="sec" style="margin-top:0">HOW TO IMPORT NEW SUBMISSIONS</h3>
+    <ol>
+      <li>Open the <a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank" rel="noopener">EE27 presenter submissions Google Sheet</a>.</li>
+      <li>File → Download → <b>Comma Separated Values (.csv)</b>.</li>
+      <li>Drop the file below (or click to browse, or paste the CSV text). New submissions are added; existing sessions get contact/bio updates only — titles, days, and slot assignments you've already curated are never overwritten.</li>
+    </ol>
+    <div class="drop" id="drop" onclick="document.getElementById('file').click()">📄 Drop the downloaded CSV here, or click to choose the file</div>
+    <input id="file" type="file" accept=".csv,text/csv" style="display:none" onchange="if(this.files[0])readFile(this.files[0])">
+    <textarea id="pastebox" placeholder="…or paste raw CSV text here"></textarea>
+    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="parsePaste()">PARSE PASTED TEXT</button>
+      <span class="stamp" id="parse-status"></span>
+    </div>
+  </div>
+  <div id="preview"></div>
+  <h3 class="sec">CURRENT DATABASE <span class="stamp">(${EXISTING.length} sessions · ${EXISTING.filter(s=>s.not_selected).length} not selected · ${EXISTING.filter(s=>s.folder).length} with folders · contracts: ${EXISTING.filter(s=>s.contract_sent).length} sent / ${EXISTING.filter(s=>s.contract_signed).length} signed · content: ${EXISTING.filter(s=>s.content_uploaded).length} uploaded / ${EXISTING.filter(s=>s.content_created).length} created)</span></h3>
+  <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
+  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
+  ${EXISTING.map(dbRowHTML).join("")}
+  </table></div>`;
+  m.innerHTML=html;
+  const d=document.getElementById("drop");
+  d.addEventListener("dragover",e=>{e.preventDefault();d.classList.add("on")});
+  d.addEventListener("dragleave",()=>d.classList.remove("on"));
+  d.addEventListener("drop",e=>{e.preventDefault();d.classList.remove("on");if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0])});
+  if(PLAN)showPreview();
+}
+// ---------- current database table ----------
+const TRACKS=[["coach","Coach"],["rd","Race Director"],["industry","Industry Expert"]];
+const FORMATS=["Presentation","Keynote","Panel Discussion","Workshop / Hands-On","Breakout Session"];
+const OPEN_ROWS=new Set();
+function dbRowHTML(s){
+  const fmtOpts=(FORMATS.includes(s.fmt)?FORMATS:[s.fmt||"—",...FORMATS]);
+  const takeaways=Array.isArray(s.takeaways)?s.takeaways:[];
+  let h=`<tr>
+    <td><b style="cursor:pointer;color:var(--usat-blue)" onclick="toggleRow('${esc(s.key)}')" title="Show summary and key takeaways">${OPEN_ROWS.has(s.key)?"▾":"▸"} ${esc(s.title)}</b></td>
+    <td>${esc(s.speaker)}</td>
+    <td><select onchange="setField('${esc(s.key)}','track',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px">
+      ${TRACKS.map(([v,l])=>`<option value="${v}" ${s.track===v?"selected":""}>${l}</option>`).join("")}</select></td>
+    <td><select onchange="setField('${esc(s.key)}','fmt',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;max-width:170px">
+      ${fmtOpts.map(o=>`<option ${s.fmt===o?"selected":""}>${esc(o)}</option>`).join("")}</select></td>
+    <td>${esc(s.day||"—")}</td>
+    <td>${esc((s.slot||"—").toUpperCase())}</td>
+    <td>${s.folder
+      ?`<a href="${esc(s.folder)}" target="_blank" rel="noopener" style="color:#1B6E3C;font-weight:bold;font-size:.74rem">🔗 OPEN</a>
+        <button class="btn ghost" style="padding:3px 8px;font-size:.6rem;margin-left:6px" onclick="editFolder('${esc(s.key)}')">✎ EDIT</button>`
+      :`<button class="btn" style="padding:4px 9px;font-size:.6rem" onclick="editFolder('${esc(s.key)}')">＋ ADD LINK</button>`}</td>
+    <td class="num"><input type="checkbox" ${s.not_selected?"checked":""} onchange="setCheck('${esc(s.key)}','not_selected',this)" style="width:16px;height:16px;accent-color:#A80C34;cursor:pointer" title="Reviewed but not chosen"></td>
+    <td class="num"><input type="checkbox" ${s.contract_sent?"checked":""} onchange="setCheck('${esc(s.key)}','contract_sent',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Contract sent"></td>
+    <td class="num"><input type="checkbox" ${s.contract_signed?"checked":""} onchange="setCheck('${esc(s.key)}','contract_signed',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Contract signed"></td>
+    <td class="num"><input type="checkbox" ${s.content_uploaded?"checked":""} onchange="setCheck('${esc(s.key)}','content_uploaded',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Digital content uploaded"></td>
+    <td class="num"><input type="checkbox" ${s.content_created?"checked":""} onchange="setCheck('${esc(s.key)}','content_created',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Digital content created"></td>
+  </tr>`;
+  if(OPEN_ROWS.has(s.key)){
+    h+=`<tr><td colspan="12" style="background:#F8FAFC;padding:12px 16px">
+      ${s.summary?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">SUMMARY</div><p style="font-size:.8rem;line-height:1.5;margin-bottom:10px">${esc(s.summary)}</p>`:""}
+      ${takeaways.length?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">KEY TAKEAWAYS</div><ul style="font-size:.8rem;line-height:1.5;padding-left:18px">${takeaways.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
+      ${!s.summary&&!takeaways.length?`<span class="stamp">No summary or takeaways on file for this session.</span>`:""}
+    </td></tr>`;
+  }
+  return h;
+}
+function toggleRow(key){
+  if(OPEN_ROWS.has(key))OPEN_ROWS.delete(key);else OPEN_ROWS.add(key);
+  render();
+}
+async function setField(key,field,val){
+  const s=byKey(key);if(!s)return;
+  const old=s[field];s[field]=val;
+  if(!await saveSession(key,{[field]:val})){s[field]=old;render();}
+}
+async function setCheck(key,field,el){
+  const s=byKey(key);if(!s)return;
+  const val=el.checked;
+  const old=s[field];
+  const patch={[field]:val};
+  if(field==="contract_sent")patch.contract_sent_via=val?"intake":""; // green on the builder
+  if(field==="not_selected"&&val&&s.slot){
+    if(!confirm(`"${s.title}" is scheduled in slot ${s.slot.toUpperCase()}. Marking it NOT SELECTED removes it from the schedule and hides it from the Schedule Builder. Continue?`)){el.checked=old;return}
+    patch.slot="";patch.status="proposed";
+  }
+  s[field]=val;
+  if(!await saveSession(key,patch)){s[field]=old;el.checked=old;}
+  else if(patch.slot==="")s.slot=null;
+  render(); // refresh the header counts
+}
+async function editFolder(key){
+  const s=byKey(key);if(!s)return;
+  const url=prompt(`Google Drive folder link for:\n"${s.title}" — ${s.speaker}\n\nPaste the folder URL (leave empty to remove the link):`,s.folder||"");
+  if(url===null)return;
+  const trimmed=url.trim();
+  if(trimmed&&!/^https?:\/\//i.test(trimmed)){alert("That doesn't look like a link — it should start with https://");return}
+  if(await saveSession(key,{folder:trimmed})){s.folder=trimmed||null;render();}
+}
+function readFile(f){
+  const rd=new FileReader();
+  rd.onload=()=>handleCSV(rd.result);
+  rd.readAsText(f);
+}
+function parsePaste(){
+  const t=document.getElementById("pastebox").value.trim();
+  if(!t){setStatus("Nothing pasted yet.",false);return}
+  handleCSV(t);
+}
+function setStatus(msg,ok){const el=document.getElementById("parse-status");el.textContent=msg;el.className=ok?"ok":"err"}
+// ---------- CSV parsing ----------
+function parseCSV(text){
+  const rows=[];let row=[],cell="",inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else inQ=false; }
+      else cell+=c;
+    }else{
+      if(c==='"')inQ=true;
+      else if(c===","){row.push(cell);cell="";}
+      else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n")i++; row.push(cell);cell=""; if(row.length>1||row[0]!=="")rows.push(row); row=[]; }
+      else cell+=c;
+    }
+  }
+  if(cell!==""||row.length){row.push(cell);if(row.length>1||row[0]!=="")rows.push(row);}
+  return rows;
+}
+const COLS={ts:"Timestamp",name:"Full Name",email:"Email Address",phone:"Phone Number",org:"Organization / Affiliation",
+  bio:"Short Bio",title:"Presentation Title",track:"Conference Track",topic:"Primary Topic Category",topic2:"Other Topic (if specified)",
+  audience:"Target Audience Level",fmt:"Session Format Preference",summary:"Presentation Summary",takeaways:"Key Learning Objectives / Takeaways",comments:"Additional Comments"};
+function handleCSV(text){
+  const rows=parseCSV(text);
+  if(rows.length<2){setStatus("Couldn't parse that as CSV.",false);return}
+  const hdr=rows[0].map(h=>h.trim());
+  const idx={};for(const[k,label]of Object.entries(COLS)){idx[k]=hdr.indexOf(label);}
+  if(idx.name<0||idx.title<0){setStatus("That file doesn't look like the submissions sheet (missing Full Name / Presentation Title columns).",false);return}
+  PARSED=rows.slice(1).filter(r=>r.some(c=>c.trim())).map(r=>{
+    const g=k=>idx[k]>=0?(r[idx[k]]||"").trim():"";
+    return {ts:g("ts"),name:g("name"),email:g("email"),phone:g("phone"),org:g("org"),bio:g("bio"),title:g("title"),
+      track:g("track"),topic:g("topic")||g("topic2"),audience:g("audience"),fmt:g("fmt"),summary:g("summary"),
+      takeaways:g("takeaways"),comments:g("comments")};
+  });
+  buildPlan();
+  setStatus(`Parsed ${PARSED.length} submissions.`,true);
+  showPreview();
+}
+// ---------- matching ----------
+function matchRow(sub){
+  const sig=norm(sub.name)+"|"+norm(sub.title);
+  let m=EXISTING.find(s=>s.sheet_sig===sig);
+  if(m)return m;
+  m=EXISTING.find(s=>norm(s.title)===norm(sub.title));
+  if(m)return m;
+  // fuzzy: surname + title word overlap
+  const ln=lastName(sub.name);
+  const words=new Set(norm(sub.title).split(" ").filter(w=>w.length>3));
+  let best=null,bestScore=0;
+  for(const s of EXISTING){
+    const nameHit=ln&&norm(s.speaker).includes(ln);
+    let ov=0;norm(s.title).split(" ").forEach(w=>{if(w.length>3&&words.has(w))ov++});
+    const score=(nameHit?5:0)+ov;
+    if(score>bestScore){bestScore=score;best=s}
+  }
+  return bestScore>=7?best:null;
+}
+function buildPlan(){
+  PLAN=PARSED.map(sub=>{
+    const m=matchRow(sub);
+    const sig=norm(sub.name)+"|"+norm(sub.title);
+    if(m)return {kind:m.sheet_sig===sig?"same":"match",sub,match:m,include:false}; // recognized rows start unchecked
+    return {kind:"new",sub,match:null,include:true};
+  });
+}
+function showPreview(){
+  if(!PLAN)return;
+  const nNew=PLAN.filter(p=>p.kind==="new").length;
+  const nMatch=PLAN.filter(p=>p.kind!=="new").length;
+  let h=`<div class="panel"><h3 class="sec" style="margin-top:0">IMPORT PREVIEW — ${nNew} new, ${nMatch} matched to existing sessions</h3>
+  <div class="hint">Only NEW submissions are pre-checked. Recognized sessions are unchecked — tick one only if you want to refresh its contact/bio info from the sheet.</div>
+  <div style="overflow-x:auto"><table class="rpt"><tr><th></th><th>STATUS</th><th>SUBMITTED BY</th><th>PRESENTATION TITLE</th><th>MATCHES EXISTING SESSION</th></tr>`;
+  PLAN.forEach((p,i)=>{
+    h+=`<tr><td><input type="checkbox" ${p.include?"checked":""} onchange="PLAN[${i}].include=this.checked;updateImportCount()"></td>
+      <td>${p.kind==="new"?'<span class="chip new">NEW</span>':p.kind==="match"?'<span class="chip match">UPDATE</span>':'<span class="chip same">KNOWN</span>'}</td>
+      <td><b>${esc(p.sub.name)}</b><div class="stamp">${esc(p.sub.email)}</div></td>
+      <td>${esc(p.sub.title)}</td>
+      <td>${p.match?esc(p.match.title):"<i>— will be added to the pool —</i>"}</td></tr>`;
+  });
+  h+=`</table></div>
+  <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+    <button class="btn" id="import-btn" onclick="runImport()">⬆ IMPORT ${PLAN.filter(p=>p.include).length} CHECKED ROWS</button>
+    <span class="stamp" id="import-status"></span>
+  </div></div>`;
+  document.getElementById("preview").innerHTML=h;
+}
+function updateImportCount(){
+  const b=document.getElementById("import-btn");
+  if(b)b.textContent=`⬆ IMPORT ${PLAN.filter(p=>p.include).length} CHECKED ROWS`;
+}
+function splitTakeaways(t){
+  const parts=(t||"").split(/\s*(?:\r?\n|[-•▪]\s+)\s*/).map(x=>x.trim()).filter(x=>x.length>2);
+  return parts.length?parts:(t?[t]:[]);
+}
+async function runImport(){
+  const st=document.getElementById("import-status");
+  st.textContent="Importing…";st.className="stamp";
+  const rows=PLAN.filter(p=>p.include).map(p=>{
+    const s=p.sub;
+    const sig=norm(s.name)+"|"+norm(s.title);
+    if(p.kind==="new"){
+      return {action:"insert",key:slugify(s.title+" "+lastName(s.name)),title:s.title,speaker:s.name,org:s.org,bio:s.bio,
+        fmt:s.fmt,track:trackMap[s.track]||"coach",day:null,summary:s.summary,takeaways:splitTakeaways(s.takeaways),
+        notes:s.comments,audience:s.audience,topic:s.topic,email:s.email,phone:s.phone,submitted_ts:s.ts,sheet_sig:sig};
+    }
+    return {action:"contact",key:p.match.key,bio:s.bio,audience:s.audience,topic:s.topic,
+      email:s.email,phone:s.phone,submitted_ts:s.ts,sheet_sig:sig};
+  });
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_import_sessions",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS,p_rows:rows})});
+    if(!r.ok){st.textContent="Import failed — check passcode / connection.";st.className="err";return}
+    const res=await r.json();
+    st.textContent=`Done — ${res.inserted} processed as new, ${res.updated} contact updates.`;st.className="ok";
+    PLAN=null;PARSED=null;
+    await loadExisting();render();
+    document.getElementById("parse-status").textContent="Import complete. Open Stage 2 to schedule the new sessions.";
+    document.getElementById("parse-status").className="ok";
+  }catch(e){st.textContent="Import failed — network problem.";st.className="err"}
+}
+// ---------- init ----------
+(async()=>{
+  if(PASS){
+    try{
+      const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_check_pass",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS})});
+      if(r.ok&&await r.json()===true){await start();return}
+    }catch(e){}
+  }
+  document.getElementById("main").innerHTML=gateHTML("");
+})();
+</script>
+</body>
+</html>

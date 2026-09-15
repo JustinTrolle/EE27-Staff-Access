@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endurance Exchange 2027 — My Event Dashboard</title>
+<style>
+:root{
+  --usat-red:#A80C34; --usat-blue:#002A5C; --usat-blue-dark:#001F47;
+  --usat-gray-dark:#1A1A1A; --usat-gray-mid:#4A4A4A;
+  --usat-gray-light:#F2F2F2; --usat-gray-border:#CCCCCC;
+  --usat-red-tint:#F5E0E5; --usat-blue-tint:#E6EAF0;
+  --font-heading:"Univers Black","Arial Black",Impact,sans-serif;
+  --font-body:"Univers Roman",Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--usat-gray-dark);background:#fff;font-size:15px}
+header{background:var(--usat-blue);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{height:54px}
+header h1{font-family:var(--font-heading);font-size:1.15rem;letter-spacing:.5px}
+header .sub{font-size:.76rem;color:rgba(255,255,255,.85);font-style:italic;margin-top:2px}
+header .who{margin-left:auto;font-size:.74rem;text-align:right}
+header .who b{display:block;font-size:.82rem}
+header .who a{color:#FFD3DD;cursor:pointer;text-decoration:underline}
+.container{max-width:1000px;margin:0 auto;padding:16px 14px 70px}
+.gate{max-width:440px;margin:40px auto;border:1px solid var(--usat-gray-border);border-radius:4px;padding:26px;background:var(--usat-gray-light)}
+.gate h2{font-family:var(--font-heading);color:var(--usat-blue);font-size:1rem;margin-bottom:6px;text-align:center}
+.gate p{font-size:.8rem;color:var(--usat-gray-mid);margin-bottom:14px;text-align:center}
+.gate label{display:block;font-size:.7rem;font-weight:bold;letter-spacing:.5px;color:var(--usat-gray-mid);margin:10px 0 3px;text-transform:uppercase}
+.gate input,.gate select{width:100%;padding:9px;border:1px solid var(--usat-gray-border);border-radius:3px;font-size:.9rem}
+.gate input[type=checkbox]{width:auto;padding:0;margin:0;flex-shrink:0;accent-color:var(--usat-red)}
+.gate .sv-opt{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.gate .err{color:var(--usat-red);font-size:.78rem;margin-top:8px;font-weight:bold;min-height:1em;text-align:center}
+.btn{font-family:var(--font-heading);font-size:.7rem;letter-spacing:.5px;padding:9px 15px;border-radius:4px;border:none;background:var(--usat-red);color:#fff;cursor:pointer}
+.btn:hover{background:#8a0a2b}
+.btn.ghost{background:#fff;color:var(--usat-blue);border:1px solid var(--usat-blue)}
+.btn.ghost:hover{background:var(--usat-blue-tint)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 16px}
+.tab{font-family:var(--font-heading);font-size:.68rem;letter-spacing:.5px;padding:8px 13px;border-radius:4px;border:1px solid var(--usat-blue);background:#fff;color:var(--usat-blue);cursor:pointer}
+.tab.on{background:var(--usat-blue);color:#fff}
+.tab .n{display:inline-block;background:var(--usat-red);color:#fff;border-radius:8px;font-size:.6rem;padding:0 6px;margin-left:5px}
+.day-title{font-family:var(--font-heading);color:var(--usat-blue);font-size:1rem;margin:14px 0 2px}
+.day-theme{font-size:.8rem;color:var(--usat-gray-mid);font-style:italic;margin-bottom:12px}
+.band{background:var(--usat-gray-light);border:1px solid var(--usat-gray-border);border-radius:4px;padding:8px 12px;font-size:.8rem;font-weight:bold;margin-bottom:10px;display:flex;gap:10px}
+.band .t{color:var(--usat-blue);white-space:nowrap}
+.timeblock{margin-bottom:14px}
+.timeblock .th{font-family:var(--font-heading);font-size:.74rem;color:#fff;background:var(--usat-blue);border-radius:4px 4px 0 0;padding:6px 12px;letter-spacing:.5px}
+.tb-body{border:1px solid var(--usat-gray-border);border-top:none;border-radius:0 0 4px 4px;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;background:#fafafa}
+.card{border:1px solid var(--usat-gray-border);border-radius:4px;padding:10px;background:#fff}
+.card.key{background:var(--usat-blue-dark);color:#fff;border-color:var(--usat-blue-dark)}
+.card .room{font-size:.64rem;font-weight:bold;letter-spacing:.4px;color:var(--usat-gray-mid);text-transform:uppercase}
+.card.key .room{color:#C9D4E4}
+.card .title{font-weight:bold;color:var(--usat-blue);font-size:.86rem;line-height:1.3;margin:4px 0;cursor:pointer}
+.card.key .title{color:#fff}
+.card .speaker{font-size:.76rem;color:var(--usat-gray-mid)}
+.card.key .speaker{color:#C9D4E4}
+.card .speaker b{color:var(--usat-gray-dark)} .card.key .speaker b{color:#fff}
+.card .fmt{display:inline-block;font-size:.66rem;color:var(--usat-blue);background:var(--usat-blue-tint);padding:1px 6px;border-radius:3px;margin-top:5px}
+.card.key .fmt{background:rgba(255,255,255,.18);color:#fff}
+.pop{font-size:.68rem;color:var(--usat-gray-mid);margin-top:5px}
+.card.key .pop{color:#C9D4E4}
+.acc-toggle{display:inline-block;margin-top:7px;font-size:.7rem;color:var(--usat-blue);cursor:pointer;font-weight:bold}
+.card.key .acc-toggle{color:#FFD3DD}
+.acc-toggle::before{content:"▸ "}
+.card.open .acc-toggle::before{content:"▾ "}
+.acc-body{display:none;margin-top:7px;border-top:1px solid var(--usat-gray-border);padding-top:7px;font-size:.76rem}
+.card.open .acc-body{display:block}
+.acc-body h5{font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);margin:7px 0 3px;text-transform:uppercase;letter-spacing:.5px}
+.card.key .acc-body h5{color:#FFD3DD}
+.acc-body p{line-height:1.45}
+.acc-body ul{padding-left:16px;line-height:1.45}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.act{font-family:var(--font-heading);font-size:.6rem;letter-spacing:.4px;padding:6px 9px;border-radius:4px;cursor:pointer;border:1px solid var(--usat-blue);background:#fff;color:var(--usat-blue)}
+.act.on{background:var(--usat-blue);color:#fff}
+.act.red{border-color:var(--usat-red);color:var(--usat-red)}
+.act.red.on{background:var(--usat-red);color:#fff}
+.act.green{border-color:#1B6E3C;color:#1B6E3C}
+.act.green.on{background:#1B6E3C;color:#fff}
+.fbform{display:none;margin-top:9px;border-top:1px dashed var(--usat-gray-border);padding-top:9px;font-size:.78rem}
+.card.fb-open .fbform{display:block}
+.fbform .fr{margin-bottom:7px}
+.fbform label{font-size:.66rem;font-weight:bold;letter-spacing:.4px;text-transform:uppercase;color:var(--usat-gray-mid);display:block;margin-bottom:3px}
+.card.key .fbform label{color:#C9D4E4}
+.starrow{display:flex;gap:3px}
+.star{font-size:1.25rem;cursor:pointer;color:#C9C9C9;user-select:none}
+.star.on{color:var(--usat-red)}
+.card.key .star{color:rgba(255,255,255,.35)} .card.key .star.on{color:#FFD3DD}
+.fbform textarea{width:100%;min-height:52px;border:1px solid var(--usat-gray-border);border-radius:3px;padding:6px;font-size:.8rem;font-family:var(--font-body)}
+.fbform input[type=email]{width:100%;padding:6px;border:1px solid var(--usat-gray-border);border-radius:3px;font-size:.8rem}
+.fbform .chk{display:flex;align-items:center;gap:6px;font-size:.76rem}
+.fb-done{font-size:.7rem;color:#1B6E3C;font-weight:bold;margin-top:6px}
+.empty{font-size:.84rem;color:var(--usat-gray-mid);font-style:italic;padding:16px 4px}
+.note{font-size:.74rem;color:var(--usat-gray-mid);margin:8px 0 14px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--usat-blue-dark);color:#fff;font-size:.8rem;padding:10px 18px;border-radius:4px;opacity:0;transition:.3s;pointer-events:none;z-index:50}
+/* post-event survey */
+.sv-locked{max-width:560px;margin:30px auto;border:1px solid var(--usat-gray-border);border-radius:4px;padding:26px;background:var(--usat-gray-light);text-align:center}
+.sv-locked h2{font-family:var(--font-heading);color:var(--usat-blue);font-size:1rem;margin-bottom:8px}
+.sv-locked p{font-size:.84rem;color:var(--usat-gray-mid);line-height:1.5}
+.sv-q{border:1px solid var(--usat-gray-border);border-radius:4px;padding:14px;margin-bottom:14px;background:#fff}
+.sv-q h4{font-size:.88rem;color:var(--usat-blue);line-height:1.4;margin-bottom:8px}
+.sv-q .qh{font-size:.68rem;color:var(--usat-gray-mid);margin-bottom:8px;font-style:italic}
+.sv-opt{display:flex;align-items:flex-start;gap:8px;font-size:.82rem;padding:4px 0;line-height:1.35}
+.sv-opt input{margin-top:2px;flex-shrink:0}
+.sv-q textarea{width:100%;min-height:64px;border:1px solid var(--usat-gray-border);border-radius:3px;padding:8px;font-size:.84rem;font-family:var(--font-body)}
+.sv-matrix{width:100%;border-collapse:collapse}
+.sv-matrix td{padding:6px 4px;border-bottom:1px solid var(--usat-gray-light);font-size:.8rem}
+.sv-matrix td:first-child{width:60%}
+.sv-matrix select{width:100%;font-family:var(--font-body);font-size:.78rem;padding:5px;border:1px solid var(--usat-gray-border);border-radius:3px;background:#fff}
+.sv-submit{position:sticky;bottom:10px;text-align:center;margin-top:16px}
+.sv-submit .btn{font-size:.8rem;padding:12px 26px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.sv-done{font-size:.8rem;color:#1B6E3C;font-weight:bold;text-align:center;margin-top:8px}
+.toast.show{opacity:1}
+footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:center;font-size:.72rem;padding:14px}
+.tab.print-tab{border-color:var(--usat-red);color:var(--usat-red)}
+.tab.print-tab:hover{background:var(--usat-red);color:#fff}
+/* ---------- TrainingPeaks × EE27 sponsor strip ---------- */
+.tpee-strip *{margin:0;padding:0;box-sizing:border-box}
+.tpee-strip{
+  --tp-blue:#3177FF;--tp-navy:#010F31;
+  position:relative;max-width:1200px;margin:0 auto 16px;background:#fff;
+  border:1px solid var(--usat-gray-border);border-radius:6px;overflow:hidden;
+  font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.10);
+}
+.tpee-strip-inner{display:flex;align-items:center;gap:20px;padding:10px 20px 10px 16px;min-height:64px}
+.tpee-strip-peaks{display:flex;align-items:flex-end;gap:4px;flex:0 0 auto}
+.tpee-strip-peaks span{display:block;width:8px;background:var(--tp-blue);transform:skewX(-18deg);border-radius:2px;animation:tpee-strip-rise 2.8s ease-in-out infinite}
+.tpee-strip-peaks span:nth-child(1){height:14px;animation-delay:0s}
+.tpee-strip-peaks span:nth-child(2){height:22px;animation-delay:.25s}
+.tpee-strip-peaks span:nth-child(3){height:30px;animation-delay:.5s}
+@keyframes tpee-strip-rise{0%,100%{transform:skewX(-18deg) scaleY(1)}50%{transform:skewX(-18deg) scaleY(1.25)}}
+.tpee-strip-text{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
+.tpee-strip-headline{font-family:"Arial Black",Impact,sans-serif;color:var(--usat-blue);font-size:1rem;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.tpee-strip-headline em{font-style:normal;color:var(--tp-blue)}
+.tpee-strip-logo{flex:0 0 auto;display:block}
+.tpee-strip-logo img{display:block;height:40px;width:auto}
+.tpee-strip-cta{flex:0 0 auto;display:inline-block;background:var(--tp-blue);color:#fff;font-family:"Arial Black",Impact,sans-serif;font-size:.72rem;letter-spacing:1.2px;text-transform:uppercase;text-decoration:none;padding:9px 16px;border-radius:4px;white-space:nowrap;transition:background .2s ease,transform .2s ease}
+.tpee-strip-cta:hover{background:#1F5CD6;transform:translateY(-1px)}
+.tpee-strip-accent{position:relative;height:4px;background:var(--usat-blue);overflow:hidden}
+.tpee-strip-accent::after{content:"";position:absolute;top:0;left:-25%;width:25%;height:100%;background:var(--tp-blue);animation:tpee-strip-track 4s linear infinite}
+@keyframes tpee-strip-track{0%{left:-25%}100%{left:125%}}
+@media(max-width:700px){
+  .tpee-strip-inner{flex-wrap:wrap;justify-content:center;text-align:center;padding:12px 16px;gap:10px 16px}
+  .tpee-strip-text{justify-content:center}
+  .tpee-strip-headline{white-space:normal;font-size:.9rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .tpee-strip-peaks span,.tpee-strip-accent::after{animation:none}
+}
+@media print{
+  .tabs,.note,.actions,.fbform,.acc-toggle,.toast,footer,header .who,.pop,.bottom-jump,.tpee-strip{display:none !important}
+  header{padding:10px 16px}
+  header .logo{height:40px}
+  body{font-size:12px}
+  .timeblock,.band{break-inside:avoid}
+  .tb-body{background:#fff}
+  .card.key{background:#fff;color:var(--usat-gray-dark);border:2px solid var(--usat-blue-dark)}
+  .card.key .title{color:var(--usat-blue)}
+  .card.key .speaker,.card.key .room{color:var(--usat-gray-mid)}
+  .card.key .speaker b{color:var(--usat-gray-dark)}
+  @page{size:letter;margin:12mm}
+}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="https://raw.githubusercontent.com/JustinTrolle/USAT-Images/31de75b5f22d823cd0632e8073e30a658d34e7d7/USA_Triathlon_Education_Logo_Transparent.png" alt="USA Triathlon Education">
+  <div>
+    <h1>ENDURANCE EXCHANGE 2027</h1>
+    <div class="sub">Where Innovation Meets Endurance • January 8–10, 2027 • Caribe Royale Orlando</div>
+  </div>
+  <div class="who" id="who"></div>
+</header>
+<div class="container" id="main"></div>
+<div class="toast" id="toast"></div>
+<footer>USA Triathlon — Endurance Exchange 2027 Participant Dashboard</footer>
+<script>
+const SUPA_URL="https://vzwpdsnxstazpfukdbak.supabase.co";
+const SUPA_KEY="sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
+const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+const ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV"];
+const LETTERS=["a","b","c","d"];
+const DAY_META = {"1": {"date": "Friday, January 8", "theme": "Day 1 — Innovation and Intelligence", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout"], ["8:00 – 11:00 AM", "band", "Packet Pickup"], ["9:00 – 9:45 AM", "sess", 1], ["10:00 – 10:45 AM", "sess", 2], ["11:00 AM – 12:00 PM", "band", "Light Lunch"], ["12:00 – 1:00 PM", "key", "Artificial Intelligence & Innovation Keynote"], ["1:00 – 1:45 PM", "sess", 3], ["2:00 – 2:45 PM", "sess", 4], ["3:00 – 3:45 PM", "band", "Networking Time — Expo Engagement"], ["4:00 – 4:45 PM", "sess", 5], ["5:00 – 5:45 PM", "sess", 6], ["6:00 – 7:00 PM", "band", "Partner Happy Hour"]]}, "2": {"date": "Saturday, January 9", "theme": "Day 2 — Human Connection and Community", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 10:00 AM", "key", "Human Connection and Community Keynote"], ["10:00 – 10:45 AM", "sess", 7], ["11:00 – 11:45 AM", "sess", 8], ["12:00 – 1:00 PM", "band", "Lunch"], ["1:00 – 1:45 PM", "sess", 9], ["2:00 – 2:45 PM", "sess", 10], ["3:00 – 3:45 PM", "band", "Networking Break"], ["4:00 – 4:45 PM", "sess", 11], ["5:00 – 5:45 PM", "sess", 12], ["6:00 – 7:00 PM", "band", "Partner Happy Hour"]]}, "3": {"date": "Sunday, January 10", "theme": "Day 3 — The Road to LA2028", "rows": [["7:00 – 8:00 AM", "band", "Fun Run 5K"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 9:45 AM", "key", "2026 State of the Sport Survey Presentation"], ["9:45 – 10:30 AM", "key", "USA Triathlon 2026 Behavioral Data and Trends"], ["10:30 – 11:30 AM", "key", "Panel Discussion: State of the Sport, Data and Trends"], ["11:30 AM – 12:30 PM", "band", "Networking Break + Lunch on own"], ["12:30 – 1:30 PM", "key", "Action Brainstorming"], ["1:45 – 2:30 PM", "sess", 13], ["2:45 – 3:30 PM", "sess", 14]]}};
+// slot -> {day,time} lookup built from DAY_META
+const SLOTINFO={};
+(function(){
+  for(const d of ["1","2","3"]){let k=0;
+    for(const[time,type,label]of DAY_META[d].rows){
+      if(type==="sess"){for(let i=0;i<4;i++)SLOTINFO[label+LETTERS[i]]={day:d,time,room:ROOMS[i]};}
+    }
+  }
+  let k=0;
+  for(const d of ["1","2","3"])for(const[time,type,label]of DAY_META[d].rows)if(type==="key"){k++;SLOTINFO["k"+k]={day:d,time,room:"General Session — "+ROOMS[0],label};}
+})();
+// ---------- conference-wide post-event survey (mirrors the 2026 survey) ----------
+const SAT_OPTS=["Very Satisfied","Satisfied","Neutral","Dissatisfied","Very Dissatisfied","Did Not Attend","N/A"];
+const SURVEY=[
+ {id:"role",t:"multi",q:"Please select the role(s) that primarily describe you.",hint:"Select all that apply",opts:["Coach","Race Director","Athlete","Club Leader","Official","Medical Professional","Exhibitor/Partner","Speaker","Other"]},
+ {id:"value",t:"single",q:"How would you rate the value of attending 2027 Endurance Exchange at the Caribe Royale Resort in Orlando, FL relative to the cost to attend?",opts:["Excellent Value","Good Value","Fair Value","Poor Value"]},
+ {id:"experience",t:"single",q:"How was your overall experience of attending Endurance Exchange?",opts:["Excellent","Good","Fair","Poor"]},
+ {id:"recommend",t:"single",q:"How likely are you to recommend Endurance Exchange to someone?",opts:["Absolutely","Most Likely","Neutral","Somewhat Likely","Not Likely"]},
+ {id:"reasons",t:"multi",q:"Which of the following reasons represent why you chose to attend Endurance Exchange this year?",hint:"Select all that apply",opts:["To earn CEUs","To network","To learn","To interact with brands and partners","To attend as a speaker / exhibitor","To mix work with vacation in Orlando","Other"]},
+ {id:"recorded",t:"single",q:"Do you plan to view recorded sessions and other content after the conference ends?",opts:["Yes","No"]},
+ {id:"travel",t:"single",q:"How did you travel to Endurance Exchange?",opts:["Flight","Drove (closer than 100 miles)","Drove (further than 100 miles)"]},
+ {id:"sat",t:"matrix",q:"How satisfied were you with each of the following?",rows:[
+   ["sat_location","Location (Orlando, FL)"],["sat_time","Time of Year"],["sat_hotel","Hotel Accommodations"],
+   ["sat_same","Accommodation and Conference at the same location"],["sat_food","Quality of provided food"],
+   ["sat_quality","Quality of educational sessions"],["sat_variety","Variety of educational sessions"],
+   ["sat_networking","Networking opportunities"],["sat_keynotes","Keynote Speakers"],["sat_expo","Expo"],
+   ["sat_app","2027 Endurance Exchange Event App"],["sat_comms","Event Communications and Website"],
+   ["sat_ceus","Ability to earn CEUs"],["sat_hh_fri","Partner Happy Hour (Friday night)"],
+   ["sat_hh_sat","Partner Happy Hour (Saturday night)"],["sat_funrun","Sunday Fun Run 5K"],
+   ["sat_workouts","Morning Group Workouts"]]},
+ {id:"missing",t:"text",q:"What content were you looking for that was not covered in the sessions?"},
+ {id:"improve",t:"text",q:"Do you have any suggestions for how we could improve the future event?"},
+ {id:"thoughts",t:"text",q:"Please share any additional thoughts surrounding the event here:"},
+ {id:"format",t:"single",q:"Do you prefer an in-person or virtual conference experience?",opts:["In-person","Virtual"]},
+ {id:"features",t:"multi",q:"At an in-person conference, please choose the five most important features to you from the list below.",hint:"Select no more than 5",max:5,opts:["Ability to Earn CEUs","Quality of Session Content","Ability to watch sessions on-demand","Registration Fee","Networking Opportunities","Location of Conference","Date of Conference","Accommodation and Conference in one location","Hotel Accommodation Cost","Distance from Airport","Quality of Expo and Exhibitors","Event Expo","Meals included in event registration fee","Social Hours","Planned Physical Activities (rides, runs, swims, etc.)"]},
+ {id:"loc_cost",t:"single",q:"How important is conference location vs. the cost to travel and attend a conference?",opts:["More desirable location, even if overall costs are higher","Lower overall cost, even if the location is less desirable","No preference"]},
+ {id:"months",t:"multi",q:"Please select your preferred month(s) for Endurance Exchange to take place.",hint:"Select all that apply",opts:["September","October","November","December","January","February","March"]},
+ {id:"week",t:"single",q:"Do you prefer the conference to take place during the week or over the weekend?",opts:["During the week","Over the weekend","No preference"]},
+ {id:"future",t:"single",q:"Do you plan to attend Endurance Exchange in future years? Please select the appropriate percentage.",opts:["100% - Yes, I will be there","80% - Extremely likely that I will be there","60% - Somewhat likely that I will be there","50% - On the fence about attending","25% - Unlikely that I will be there","0% - No, I will not be there"]}
+];
+const ROLE_OPTS=["Coach","Race Director","Athlete","Club","Foundation Member","USA Triathlon Partner","Industry Specialist","Presenter","USA Triathlon Staff","Other"];
+let SVSTATE=null; // {open, opens_at}
+let SVSAVED={};try{SVSAVED=JSON.parse(localStorage.getItem("ee27_eventsurvey")||"{}")}catch(e){}
+let ME=null;try{ME=JSON.parse(localStorage.getItem("ee27_attendee")||"null")}catch(e){}
+let MYFB={};try{MYFB=JSON.parse(localStorage.getItem("ee27_myfeedback")||"{}")}catch(e){}
+let SESSIONS=[],SEL=new Set(),COUNTS={},CHK=new Set(),CHKCOUNTS={},TAB="1";
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+// ---------- registration ----------
+function gateHTML(msg){
+  return `<div class="gate">
+    <h2>WELCOME TO ENDURANCE EXCHANGE 2027</h2>
+    <p>Register once on this device to build your personal schedule, check in to sessions, and share feedback.</p>
+    <label>Full name</label><input id="r-name" placeholder="Your name">
+    <label>Email</label><input id="r-email" type="email" placeholder="you@example.com">
+    <label>I am a… (choose all that apply)</label>
+    <div style="text-align:left;background:#fff;border:1px solid var(--usat-gray-border);border-radius:3px;padding:8px 10px">
+      ${ROLE_OPTS.map(r=>`<label class="sv-opt" style="padding:3px 0"><input type="checkbox" name="r-role" value="${esc(r)}" ${r==="Other"?`onchange="document.getElementById('r-other-wrap').style.display=this.checked?'block':'none'"`:""}> ${esc(r)}</label>`).join("")}
+      <div id="r-other-wrap" style="display:none;padding:4px 0 2px 24px">
+        <input id="r-other" placeholder="Please tell us what best describes you" style="font-size:.85rem;padding:7px">
+      </div>
+    </div>
+    <div class="err">${esc(msg||"")}</div>
+    <div style="text-align:center;margin-top:8px"><button class="btn" onclick="register()">START BUILDING MY SCHEDULE</button></div>
+  </div>`;
+}
+async function register(){
+  const name=document.getElementById("r-name").value.trim();
+  const email=document.getElementById("r-email").value.trim();
+  let roles=[...document.querySelectorAll('input[name="r-role"]:checked')].map(c=>c.value);
+  const otherTxt=(document.getElementById("r-other")||{value:""}).value.trim();
+  if(roles.includes("Other")&&otherTxt)roles=roles.map(r=>r==="Other"?"Other: "+otherTxt:r);
+  if(!name){document.getElementById("main").innerHTML=gateHTML("Please enter your name.");return}
+  if(!roles.length){document.getElementById("main").innerHTML=gateHTML("Please pick at least one role.");keepReg(name,email);return}
+  // primary role keeps the coach/RD rollup on the tracking dashboard working
+  const role=roles.includes("Coach")?"coach":roles.includes("Race Director")?"race_director":"other";
+  try{
+    const id=(crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)));
+    const r=await fetch(SUPA_URL+"/rest/v1/ee27_attendees",{method:"POST",
+      headers:{...H,"Prefer":"return=minimal"},
+      body:JSON.stringify({id,name,email,role,roles})});
+    if(!r.ok){document.getElementById("main").innerHTML=gateHTML("Registration failed — please try again.");keepReg(name,email);return}
+    ME={id,name,email,role,roles};
+    localStorage.setItem("ee27_attendee",JSON.stringify(ME));
+    await loadAll();render();
+  }catch(e){document.getElementById("main").innerHTML=gateHTML("Connection problem — please try again.")}
+}
+function keepReg(name,email){
+  const n=document.getElementById("r-name"),e=document.getElementById("r-email");
+  if(n)n.value=name;if(e)e.value=email;
+}
+function signout(){
+  if(!confirm("Reset this device? Your selections stay saved, but you'll register again with a fresh profile."))return;
+  localStorage.removeItem("ee27_attendee");localStorage.removeItem("ee27_myfeedback");ME=null;render();
+}
+// ---------- data ----------
+async function loadAll(){
+  try{
+    const [rs,rsel,ratt,rsv]=await Promise.all([
+      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,org,fmt,track,day,slot,summary,takeaways&slot=not.is.null",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/ee27_selections?select=attendee_id,session_key,selected",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/ee27_attendance?select=attendee_id,session_key",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/rpc/ee27_survey_state",{method:"POST",headers:H,body:"{}"})
+    ]);
+    if(rsv.ok)SVSTATE=await rsv.json();
+    if(rs.ok)SESSIONS=await rs.json();
+    COUNTS={};SEL=new Set();
+    if(rsel.ok)(await rsel.json()).forEach(s=>{
+      if(!s.selected)return;
+      COUNTS[s.session_key]=(COUNTS[s.session_key]||0)+1;
+      if(ME&&s.attendee_id===ME.id)SEL.add(s.session_key);
+    });
+    CHKCOUNTS={};CHK=new Set();
+    if(ratt.ok)(await ratt.json()).forEach(t=>{
+      CHKCOUNTS[t.session_key]=(CHKCOUNTS[t.session_key]||0)+1;
+      if(ME&&t.attendee_id===ME.id)CHK.add(t.session_key);
+    });
+  }catch(e){}
+}
+function bySlot(slot){return SESSIONS.find(s=>s.slot===slot)}
+// ---------- actions ----------
+async function toggleSel(key){
+  const on=SEL.has(key);
+  if(on){
+    SEL.delete(key);COUNTS[key]=Math.max(0,(COUNTS[key]||1)-1);render();
+    await fetch(`${SUPA_URL}/rest/v1/ee27_selections?attendee_id=eq.${ME.id}&session_key=eq.${encodeURIComponent(key)}`,{method:"DELETE",headers:H});
+    toast("Removed from your schedule");
+  }else{
+    SEL.add(key);COUNTS[key]=(COUNTS[key]||0)+1;render();
+    await fetch(`${SUPA_URL}/rest/v1/ee27_selections?on_conflict=attendee_id,session_key`,{method:"POST",
+      headers:{...H,"Prefer":"resolution=merge-duplicates"},
+      body:JSON.stringify({attendee_id:ME.id,session_key:key,selected:true,status:"interested"})});
+    toast("Added to your schedule ✓");
+  }
+}
+async function checkIn(key){
+  if(CHK.has(key)){
+    if(!confirm("Undo this check-in? Only do this if you checked in by accident."))return;
+    CHK.delete(key);CHKCOUNTS[key]=Math.max(0,(CHKCOUNTS[key]||1)-1);render();
+    await fetch(`${SUPA_URL}/rest/v1/ee27_attendance?attendee_id=eq.${ME.id}&session_key=eq.${encodeURIComponent(key)}`,{method:"DELETE",headers:H});
+    toast("Check-in removed");
+    return;
+  }
+  CHK.add(key);CHKCOUNTS[key]=(CHKCOUNTS[key]||0)+1;render();
+  await fetch(`${SUPA_URL}/rest/v1/ee27_attendance?on_conflict=attendee_id,session_key`,{method:"POST",
+    headers:{...H,"Prefer":"resolution=ignore-duplicates"},
+    body:JSON.stringify({attendee_id:ME.id,session_key:key})});
+  toast("Checked in ✓");
+}
+const FB={};
+function fbState(key){if(!FB[key])FB[key]={content:MYFB[key]?.content||0,presenter:MYFB[key]?.presenter||0,fu:MYFB[key]?.fu||false};return FB[key]}
+function setStar(key,which,n,ev){ev.stopPropagation();fbState(key)[which]=n;render()}
+function toggleFb(key,ev){ev.stopPropagation();const el=cardEl(key);if(el)el.classList.toggle("fb-open")}
+function cardEl(key){return document.querySelector(`.card[data-key="${CSS.escape(key)}"]`)}
+async function sendFb(key,ev){
+  ev.stopPropagation();
+  const el=cardEl(key);
+  const st=fbState(key);
+  const comments=el.querySelector(".fb-comments").value.trim();
+  const wantsFu=el.querySelector(".fb-fu").checked;
+  const fuEmail=el.querySelector(".fb-email").value.trim();
+  if(!st.content&&!st.presenter&&!comments){toast("Add a rating or comment first");return}
+  const body={p_attendee:ME.id,p_key:key,
+    p_content:st.content||null,p_presenter:st.presenter||null,
+    p_comments:comments,p_followup:wantsFu,p_followup_email:wantsFu?(fuEmail||ME.email||""):""};
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/rpc/ee27_submit_feedback`,{method:"POST",
+      headers:H,body:JSON.stringify(body)});
+    if(!r.ok){toast("Could not send feedback — try again");return}
+    MYFB[key]={content:st.content,presenter:st.presenter,fu:wantsFu,done:true};
+    localStorage.setItem("ee27_myfeedback",JSON.stringify(MYFB));
+    toast("Feedback sent — thank you!");render();
+  }catch(e){toast("Connection problem — try again")}
+}
+// ---------- rendering ----------
+function stars(key,which){
+  const v=fbState(key)[which];
+  let h='<div class="starrow">';
+  for(let n=1;n<=5;n++)h+=`<span class="star ${n<=v?"on":""}" onclick="setStar('${esc(key)}','${which}',${n},event)">★</span>`;
+  return h+'</div>';
+}
+function cardHTML(s,room,isKey){
+  const sel=SEL.has(s.key),chk=CHK.has(s.key),done=MYFB[s.key]?.done;
+  const cnt=COUNTS[s.key]||0;
+  const takeaways=Array.isArray(s.takeaways)?s.takeaways:[];
+  return `<div class="card ${isKey?"key":""}" data-key="${esc(s.key)}">
+    <div class="room">${esc(room)}</div>
+    <div class="title" onclick="toggleCard('${esc(s.key)}')">${esc(s.title)}</div>
+    <div class="speaker"><b>${esc(s.speaker)}</b>${s.org?" · "+esc(s.org):""}</div>
+    <span class="fmt">${esc(s.fmt)}</span>
+    <span class="acc-toggle" onclick="toggleCard('${esc(s.key)}')">Details</span>
+    <div class="acc-body">
+      ${s.summary?`<h5>Summary</h5><p>${esc(s.summary)}</p>`:""}
+      ${takeaways.length?`<h5>Key Takeaways</h5><ul>${takeaways.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
+    </div>
+    <div class="actions">
+      <button class="act ${sel?"on":""}" onclick="toggleSel('${esc(s.key)}')">${sel?"✓ ON MY SCHEDULE":"☆ ADD TO MY SCHEDULE"}</button>
+      <button class="act green ${chk?"on":""}" onclick="checkIn('${esc(s.key)}')" title="${chk?"Tap again to undo an accidental check-in":"Record that you attended this session"}">${chk?"✓ CHECKED IN":"CHECK IN"}</button>
+      <button class="act red" onclick="toggleFb('${esc(s.key)}',event)">${done?"✎ EDIT FEEDBACK":"★ GIVE FEEDBACK"}</button>
+    </div>
+    <div class="fbform" onclick="event.stopPropagation()">
+      <div class="fr"><label>Session content</label>${stars(s.key,"content")}</div>
+      <div class="fr"><label>Presenter</label>${stars(s.key,"presenter")}</div>
+      <div class="fr"><label>Comments</label><textarea class="fb-comments" placeholder="What did you think?"></textarea></div>
+      <div class="fr chk"><input type="checkbox" class="fb-fu" ${MYFB[s.key]?.fu?"checked":""}> I'd like a follow-up about this topic</div>
+      <div class="fr"><input type="email" class="fb-email" placeholder="Follow-up email (optional — defaults to your registration email)"></div>
+      <button class="act red on" onclick="sendFb('${esc(s.key)}',event)">SEND FEEDBACK</button>
+      ${done?'<div class="fb-done">✓ Feedback received — you can update it any time.</div>':""}
+    </div>
+  </div>`;
+}
+function toggleCard(key){const el=cardEl(key);if(el)el.classList.toggle("open")}
+function dayHTML(d){
+  const meta=DAY_META[d];
+  let h=`<div class="day-title">${esc(meta.date).toUpperCase()}</div><div class="day-theme">${esc(meta.theme)}</div>`;
+  let k=0;
+  for(const dd of ["1","2","3"]){if(dd===d)break;for(const r of DAY_META[dd].rows)if(r[1]==="key")k++;}
+  for(const[time,type,label]of meta.rows){
+    if(type==="band"){h+=`<div class="band"><span class="t">${esc(time)}</span><span>${esc(label)}</span></div>`;}
+    else if(type==="key"){
+      k++;const kid="k"+k;const s=bySlot(kid);
+      h+=`<div class="timeblock"><div class="th">${esc(time)} — GENERAL SESSION</div><div class="tb-body" style="grid-template-columns:1fr">`;
+      h+=s?cardHTML(s,"General Session — "+ROOMS[0],true):`<div class="empty">${esc(label)} — details coming soon</div>`;
+      h+=`</div></div>`;
+    }else{
+      const cards=[];
+      for(let i=0;i<4;i++){const s=bySlot(label+LETTERS[i]);if(s)cards.push(cardHTML(s,ROOMS[i],false));}
+      h+=`<div class="timeblock"><div class="th">${esc(time)} — CONCURRENT SESSIONS</div><div class="tb-body">`;
+      h+=cards.length?cards.join(""):`<div class="empty">Sessions for this time are still being finalized.</div>`;
+      h+=`</div></div>`;
+    }
+  }
+  return h;
+}
+function myHTML(){
+  const mine=SESSIONS.filter(s=>SEL.has(s.key));
+  if(!mine.length)return `<div class="empty">Nothing on your schedule yet — browse the days above and tap “Add to my schedule”.</div>`;
+  const ord=s=>{const i=SLOTINFO[s.slot];return i?Number(i.day)*100+DAY_META[i.day].rows.findIndex(r=>r[0]===i.time):999};
+  mine.sort((a,b)=>ord(a)-ord(b));
+  let h="",lastDay="";
+  for(const s of mine){
+    const i=SLOTINFO[s.slot]||{};
+    if(i.day!==lastDay){lastDay=i.day;h+=`<div class="day-title">${esc((DAY_META[i.day]||{}).date||"").toUpperCase()}</div>`;}
+    h+=`<div class="timeblock"><div class="th">${esc(i.time||"")} — ${esc(i.room||"")}</div><div class="tb-body" style="grid-template-columns:1fr">${cardHTML(s,i.room||"",s.slot&&s.slot[0]==="k")}</div></div>`;
+  }
+  return h;
+}
+function snapshotForms(){
+  const snap={};
+  document.querySelectorAll(".card").forEach(el=>{
+    const key=el.dataset.key;if(!key)return;
+    const s={open:el.classList.contains("open"),fbOpen:el.classList.contains("fb-open")};
+    const c=el.querySelector(".fb-comments"),e=el.querySelector(".fb-email"),f=el.querySelector(".fb-fu");
+    if(c)s.comments=c.value; if(e)s.email=e.value; if(f)s.fu=f.checked;
+    if(s.open||s.fbOpen||s.comments||s.email) snap[key]=s;
+  });
+  return snap;
+}
+function restoreForms(snap){
+  for(const[key,s]of Object.entries(snap)){
+    const el=cardEl(key);if(!el)continue;
+    if(s.open)el.classList.add("open");
+    if(s.fbOpen)el.classList.add("fb-open");
+    const c=el.querySelector(".fb-comments"),e=el.querySelector(".fb-email"),f=el.querySelector(".fb-fu");
+    if(c&&s.comments!=null)c.value=s.comments;
+    if(e&&s.email!=null)e.value=s.email;
+    if(f&&s.fu!=null)f.checked=s.fu;
+  }
+}
+// ---------- post-event survey ----------
+function surveyOpen(){
+  if(new URLSearchParams(location.search).get("preview")==="1")return true;
+  return !!(SVSTATE&&SVSTATE.open);
+}
+function surveyHTML(){
+  if(!surveyOpen()){
+    const when=SVSTATE&&SVSTATE.opens_at?new Date(SVSTATE.opens_at).toLocaleString([],{weekday:"long",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"}):"after the final session";
+    return `<div class="sv-locked"><h2>🔒 POST-EVENT SURVEY</h2>
+      <p>The conference-wide survey opens after the final session of Endurance Exchange 2027.</p>
+      <p><b>Opens: ${esc(when)}</b></p>
+      <p>Check back here once the last session wraps — we'd love to hear about your whole experience.</p></div>`;
+  }
+  const a=SVSAVED.answers||{};
+  let h=`<div class="day-title">POST-EVENT SURVEY</div>
+  <div class="day-theme">Tell us about your Endurance Exchange 2027 experience — about 3 minutes. You can update your answers any time.</div>
+  ${SVSAVED.done?'<div class="sv-done">✓ Your survey has been received — feel free to revise and resubmit.</div>':""}
+  <div id="svform">`;
+  for(const q of SURVEY){
+    h+=`<div class="sv-q" data-q="${q.id}" data-t="${q.t}">`;
+    if(q.t==="matrix"){
+      h+=`<h4>${esc(q.q)}</h4><table class="sv-matrix">`;
+      for(const[rid,label]of q.rows){
+        h+=`<tr><td>${esc(label)}</td><td><select data-row="${rid}"><option value="">— select —</option>${SAT_OPTS.map(o=>`<option ${a[rid]===o?"selected":""}>${o}</option>`).join("")}</select></td></tr>`;
+      }
+      h+=`</table>`;
+    }else if(q.t==="text"){
+      h+=`<h4>${esc(q.q)}</h4><textarea>${esc(a[q.id]||"")}</textarea>`;
+    }else{
+      h+=`<h4>${esc(q.q)}</h4>${q.hint?`<div class="qh">${esc(q.hint)}</div>`:""}`;
+      const type=q.t==="single"?"radio":"checkbox";
+      const cur=q.t==="single"?[a[q.id]]:(a[q.id]||[]);
+      q.opts.forEach((o,i)=>{
+        h+=`<label class="sv-opt"><input type="${type}" name="sv-${q.id}" value="${esc(o)}" ${cur.includes(o)?"checked":""} ${q.max?`onchange="capMulti('${q.id}',${q.max},this)"`:""}> ${esc(o)}</label>`;
+      });
+    }
+    h+=`</div>`;
+  }
+  h+=`</div><div class="sv-submit"><button class="btn" onclick="submitSurvey()">${SVSAVED.done?"UPDATE MY SURVEY":"SUBMIT SURVEY"}</button></div>`;
+  return h;
+}
+function capMulti(qid,max,el){
+  const boxes=[...document.querySelectorAll(`input[name="sv-${qid}"]:checked`)];
+  if(boxes.length>max){el.checked=false;toast(`Please pick at most ${max}.`);}
+}
+function collectSurvey(){
+  const a={};
+  document.querySelectorAll("#svform .sv-q").forEach(el=>{
+    const id=el.dataset.q,t=el.dataset.t;
+    if(t==="matrix"){
+      el.querySelectorAll("select[data-row]").forEach(s=>{if(s.value)a[s.dataset.row]=s.value;});
+    }else if(t==="text"){
+      const v=el.querySelector("textarea").value.trim();if(v)a[id]=v;
+    }else if(t==="single"){
+      const c=el.querySelector("input:checked");if(c)a[id]=c.value;
+    }else{
+      const vals=[...el.querySelectorAll("input:checked")].map(c=>c.value);if(vals.length)a[id]=vals;
+    }
+  });
+  return a;
+}
+async function submitSurvey(){
+  const answers=collectSurvey();
+  if(!Object.keys(answers).length){toast("Please answer at least one question first.");return}
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_submit_event_survey",{method:"POST",headers:H,
+      body:JSON.stringify({p_attendee:ME.id,p_answers:answers})});
+    if(!r.ok){toast("Could not submit — please try again.");return}
+    SVSAVED={done:true,answers};
+    localStorage.setItem("ee27_eventsurvey",JSON.stringify(SVSAVED));
+    toast("Survey received — thank you!");render();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }catch(e){toast("Connection problem — please try again.")}
+}
+function render(){
+  const snap=snapshotForms();
+  const who=document.getElementById("who");
+  who.innerHTML=ME?`<b>${esc(ME.name)}</b>${esc((ME.roles&&ME.roles.length)?ME.roles.join(", "):(ME.role==="coach"?"Coach":ME.role==="race_director"?"Race Director":"Attendee"))} · <a onclick="signout()">reset</a>`:"";
+  const m=document.getElementById("main");
+  if(!ME){m.innerHTML=gateHTML("");return}
+  const nMine=SESSIONS.filter(s=>SEL.has(s.key)).length;
+  const tabsHTML=(where)=>`<div class="tabs">
+    ${["1","2","3"].map(d=>`<button class="tab ${TAB===d?"on":""}" onclick="goTab('${d}','${where}')">DAY ${d} · ${esc(DAY_META[d].date.split(",")[0]).toUpperCase()}</button>`).join("")}
+    <button class="tab ${TAB==="my"?"on":""}" onclick="goTab('my','${where}')">MY SCHEDULE<span class="n">${nMine}</span></button>
+    <button class="tab ${TAB==="survey"?"on":""}" onclick="goTab('survey','${where}')">${surveyOpen()?"📋":"🔒"} EVENT SURVEY</button>
+    ${TAB==="survey"?"":`<button class="tab print-tab" onclick="window.print()" title="Print the schedule you're currently viewing">🖨 PRINT SCHEDULE</button>`}
+  </div>`;
+  let h=tabsHTML("top");
+  h+=TAB==="survey"?"":`<div class="note">Tap a session title for the full summary and takeaways. “Add to my schedule” tells us what you're interested in; “Check in” records that you attended; feedback goes straight to the education team.</div>`;
+  if(TAB!=="survey")h+=TPEE_BANNER;
+  h+=TAB==="survey"?surveyHTML():TAB==="my"?myHTML():dayHTML(TAB);
+  h+=`<div class="bottom-jump" style="border-top:1px solid var(--usat-gray-border);margin-top:22px;padding-top:14px">
+    <div style="font-size:.7rem;font-weight:bold;letter-spacing:.5px;color:var(--usat-gray-mid);text-transform:uppercase;margin-bottom:8px">Jump to another day</div>
+    ${tabsHTML("bottom")}</div>`;
+  m.innerHTML=h;
+  restoreForms(snap);
+}
+const TPEE_BANNER=`<div class="tpee-strip">
+  <div class="tpee-strip-inner">
+    <div class="tpee-strip-peaks" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="tpee-strip-text">
+      <span class="tpee-strip-headline">Plan smarter. Coach <em>stronger.</em></span>
+    </div>
+    <span class="tpee-strip-logo">
+      <img src="https://raw.githubusercontent.com/JustinTrolle/USAT-Images/a7a32d0fe98163084e00b82285b0711bdf6fe06b/Training%20Peask%20Logo.png" alt="TrainingPeaks logo" width="229" height="86">
+    </span>
+    <a class="tpee-strip-cta" href="https://www.trainingpeaks.com" target="_blank" rel="noopener">Explore TrainingPeaks &rarr;</a>
+  </div>
+  <div class="tpee-strip-accent" aria-hidden="true"></div>
+</div>`;
+function goTab(t,where){
+  TAB=t;render();
+  if(where==="bottom")window.scrollTo({top:0,behavior:"instant"});
+}
+// ---------- init ----------
+(async()=>{
+  await loadAll();
+  render();
+  setInterval(async()=>{await loadAll();if(TAB!=="survey")render();},60000); // never re-render mid-survey
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EE27 Stage 2 — Schedule Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --usat-red:#A80C34; --usat-blue:#002A5C; --usat-blue-dark:#001F47;
+  --usat-white:#FFFFFF; --usat-gray-dark:#1A1A1A; --usat-gray-mid:#4A4A4A;
+  --usat-gray-light:#F2F2F2; --usat-gray-border:#CCCCCC;
+  --usat-red-tint:#F5E0E5; --usat-blue-tint:#E6EAF0;
+  --font-heading:"Univers Black","Arial Black",Impact,sans-serif;
+  --font-body:"Univers Roman",Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--usat-gray-dark);background:#fff;font-size:15px}
+header{background:var(--usat-blue);color:#fff;padding:20px 28px;display:flex;align-items:center;gap:24px}
+header .logo{height:78px;width:auto;flex-shrink:0}
+header .head-text{flex:1;text-align:center;padding-right:110px}
+@media(max-width:760px){header{flex-direction:column;gap:10px}header .head-text{padding-right:0}}
+header h1{font-family:var(--font-heading);font-size:1.9rem;letter-spacing:.5px}
+header .sub{margin-top:6px;font-size:.9rem;color:rgba(255,255,255,.85);font-style:italic}
+.stagebar{background:var(--usat-blue-dark);padding:8px 26px;display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem}
+.stagebar a{color:rgba(255,255,255,.75);text-decoration:none;font-family:var(--font-heading);letter-spacing:.5px}
+.stagebar a.here{color:#fff;border-bottom:2px solid var(--usat-red)}
+.stagebar a:hover{color:#fff}
+.container{max-width:1500px;margin:0 auto;padding:24px}
+.gate{max-width:420px;margin:70px auto;border:1px solid var(--usat-gray-border);border-radius:4px;padding:26px;background:var(--usat-gray-light);text-align:center}
+.gate h2{font-family:var(--font-heading);color:var(--usat-blue);font-size:1rem;margin-bottom:6px}
+.gate p{font-size:.8rem;color:var(--usat-gray-mid);margin-bottom:14px}
+.gate input{width:100%;padding:9px;border:1px solid var(--usat-gray-border);border-radius:3px;font-size:.9rem;text-align:center}
+.gate .err{color:var(--usat-red);font-size:.78rem;margin-top:8px;font-weight:bold;min-height:1em}
+.day-block{margin-bottom:44px}
+.day-header{background:var(--usat-red);color:#fff;padding:12px 18px;border-radius:4px 4px 0 0}
+.day-header h2{font-family:var(--font-heading);font-size:1.15rem}
+.day-header .theme{font-size:.85rem;color:rgba(255,255,255,.9);margin-top:2px}
+.grid-scroll{overflow-x:auto;border:1px solid var(--usat-gray-border);border-top:none}
+table.grid{border-collapse:collapse;width:100%;min-width:1100px}
+table.grid tr.slotrow,table.grid tr.bandrow{height:140px}
+table.grid th{background:var(--usat-blue);color:#fff;font-family:var(--font-heading);font-weight:normal;font-size:.8rem;padding:10px 8px;border:1px solid var(--usat-gray-border)}
+table.grid td{border:1px solid var(--usat-gray-border);vertical-align:top;padding:0}
+td.time{background:var(--usat-blue-tint);color:var(--usat-blue);font-weight:bold;font-size:.8rem;text-align:center;padding:10px 6px;white-space:nowrap;width:130px;vertical-align:middle}
+td.band{background:var(--usat-gray-light);font-weight:bold;text-align:center;padding:10px;font-size:.85rem;vertical-align:middle}
+td.keynote{background:var(--usat-blue-dark);color:#fff;font-weight:bold;text-align:center;padding:12px;font-size:.9rem;vertical-align:middle}
+td.slotcell{width:23%;background:#fff}
+.open-slot{padding:14px 10px;text-align:center;color:var(--usat-gray-mid);font-size:.8rem}
+.open-slot .badge{opacity:.55}
+.badge{display:inline-block;background:var(--usat-red);color:#fff;font-family:var(--font-heading);font-size:.7rem;padding:2px 8px;border-radius:3px;letter-spacing:.5px}
+.card{padding:10px}
+.card .title{font-weight:bold;color:var(--usat-blue);font-size:.85rem;line-height:1.3;margin:6px 0 4px;cursor:pointer}
+.card .title:hover{text-decoration:underline}
+.card .speaker{font-size:.78rem;color:var(--usat-gray-mid)}
+.card .speaker b{color:var(--usat-gray-dark)}
+.sp-link{color:inherit;text-decoration:underline;text-decoration-color:rgba(0,42,92,.35);text-underline-offset:2px}
+.sp-link:hover{color:var(--usat-red);text-decoration-color:var(--usat-red)}
+td.keynote .card .sp-link{text-decoration-color:rgba(255,255,255,.45)}
+td.keynote .card .sp-link:hover{color:#FFD3DD;text-decoration-color:#FFD3DD}
+.card .fmt{display:inline-block;font-size:.68rem;color:var(--usat-blue);background:var(--usat-blue-tint);padding:1px 6px;border-radius:3px;margin-top:5px}
+.acc-toggle{display:inline-block;margin-top:8px;font-size:.72rem;color:var(--usat-blue);cursor:pointer;font-weight:bold}
+.acc-toggle::before{content:"▸ ";transition:.15s}
+.card.open .acc-toggle::before{content:"▾ "}
+.acc-body{display:none;margin-top:8px;border-top:1px solid var(--usat-gray-border);padding-top:8px;font-size:.78rem}
+.card.open .acc-body{display:block}
+.acc-body h5{font-family:var(--font-heading);font-size:.72rem;color:var(--usat-red);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+.acc-body p{line-height:1.45;margin-bottom:4px}
+.acc-body ul{padding-left:16px;line-height:1.45}
+.acc-body li{margin-bottom:3px}
+.acc-body .note{font-style:italic;color:var(--usat-gray-mid);margin-top:6px}
+.dl-btn{display:inline-block;margin-top:10px;background:var(--usat-red);color:#fff;border:none;font-family:var(--font-heading);font-size:.7rem;padding:6px 12px;border-radius:4px;cursor:pointer;letter-spacing:.5px}
+.dl-btn:hover{background:#8a0a2b}
+.folder-btn{background:var(--usat-blue);margin-left:8px}
+.folder-btn:hover{background:var(--usat-blue-dark)}
+td.keynote .folder-btn{background:rgba(255,255,255,.18)}
+.cstat{display:inline-block;margin-top:6px;margin-right:4px;font-size:.64rem;font-weight:bold;letter-spacing:.3px;color:var(--usat-gray-mid);background:#fff;border:1px solid var(--usat-gray-border);border-radius:3px;padding:1px 6px}
+.cstat.on{color:#fff;background:#1B6E3C;border-color:#1B6E3C}
+.cstat.no{color:#fff;background:var(--usat-red);border-color:var(--usat-red)}
+.cstat.onb{color:#fff;background:var(--usat-blue);border-color:var(--usat-blue)}
+td.keynote .cstat.onb{background:#3177FF;color:#fff;border-color:#3177FF}
+.cstat.lock{color:#fff;background:var(--usat-blue-dark);border-color:var(--usat-blue-dark)}
+td.keynote .cstat.lock{background:#fff;color:var(--usat-blue-dark);border-color:#fff}
+.cstat.click{cursor:pointer}
+.cstat.click:hover{border-color:var(--usat-red);color:var(--usat-red)}
+.cstat.click.no:hover{background:#8a0a2b;color:#fff}
+td.keynote .cstat.no{background:var(--usat-red);color:#fff;border-color:var(--usat-red)}
+td.keynote .cstat{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.4)}
+td.keynote .cstat.on{background:#1B6E3C;color:#fff;border-color:#1B6E3C}
+.signups{display:inline-block;margin-top:6px;font-size:.7rem;font-weight:bold;color:var(--usat-blue);background:var(--usat-blue-tint);border:1px solid var(--usat-gray-border);border-radius:10px;padding:2px 9px;cursor:pointer}
+.signups:hover{background:var(--usat-blue);color:#fff}
+.signups.zero{opacity:.55}
+td.keynote .signups{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}
+td.keynote .signups:hover{background:#fff;color:var(--usat-blue-dark)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,31,71,.55);z-index:90;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{background:#fff;border-radius:6px;max-width:640px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.35)}
+.modal .mh{background:var(--usat-blue);color:#fff;border-radius:6px 6px 0 0;padding:14px 18px}
+.modal .mh h3{font-family:var(--font-heading);font-size:.95rem;letter-spacing:.3px;line-height:1.3}
+.modal .mh .sub{font-size:.75rem;color:rgba(255,255,255,.85);margin-top:3px}
+.modal .mb{padding:14px 18px;overflow-y:auto}
+.modal table{border-collapse:collapse;width:100%;font-size:.8rem}
+.modal th{background:var(--usat-blue-tint);color:var(--usat-blue);font-family:var(--font-heading);font-weight:normal;font-size:.64rem;letter-spacing:.4px;padding:7px 8px;text-align:left;border:1px solid var(--usat-gray-border)}
+.modal td{border:1px solid var(--usat-gray-border);padding:6px 8px}
+.modal .mf{padding:12px 18px;border-top:1px solid var(--usat-gray-border);display:flex;gap:10px;justify-content:flex-end}
+.modal .mf button{font-family:var(--font-heading);font-size:.7rem;letter-spacing:.5px;padding:8px 14px;border-radius:4px;border:none;cursor:pointer}
+.modal .m-csv{background:var(--usat-red);color:#fff}
+.modal .m-csv:hover{background:#8a0a2b}
+.modal .m-close{background:#fff;color:var(--usat-blue);border:1px solid var(--usat-blue) !important}
+.modal .empty{font-size:.82rem;color:var(--usat-gray-mid);font-style:italic;padding:10px 0}
+.pool{border:1px solid var(--usat-gray-border);border-top:none;background:#fafafa;padding:16px}
+.pool h3{font-family:var(--font-heading);color:var(--usat-blue);font-size:.95rem;margin-bottom:4px}
+.pool .hint{font-size:.78rem;color:var(--usat-gray-mid);margin-bottom:12px}
+.pool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.pool .card{border:1px solid var(--usat-gray-border);border-radius:4px}
+.card.track-coach{background:#E9F0F8}
+.card.track-rd{background:#E6F3E8}
+.card.track-industry{background:#FDF6E3}
+.card.fmt-key{background:#F9E6EA}
+.card.fmt-panel{background:#FDF3D7}
+.card.fmt-workshop{background:#F0EAF8}
+.card.fmt-breakout{background:#FDEBDC}
+td.keynote .key-label{font-weight:bold}
+td.keynote .key-label .badge{margin-left:8px}
+td.keynote .card{background:transparent;text-align:left;font-weight:normal;max-width:980px;margin:4px auto 0}
+td.keynote .card .title{color:#fff}
+td.keynote .card .speaker{color:#C9D4E4}
+td.keynote .card .speaker b{color:#fff}
+td.keynote .card .fmt{background:rgba(255,255,255,.18);color:#fff}
+td.keynote .card .acc-toggle{color:#FFD3DD}
+td.keynote .card .acc-body{border-top-color:rgba(255,255,255,.35);color:#E6EAF0}
+td.keynote .card .acc-body h5{color:#FFD3DD}
+td.keynote .card .acc-body .note{color:#C9D4E4}
+td.keynote .card-foot label{color:#C9D4E4}
+td.keynote .rm-btn{background:transparent;color:#fff;border-color:#fff}
+td.keynote .rm-btn:hover{background:#fff;color:var(--usat-blue-dark)}
+td.slotcell{padding:0}
+td.slotcell .card{height:100%}
+.legend{display:flex;gap:18px;justify-content:center;margin:14px 0 4px;font-size:.8rem;color:var(--usat-gray-mid);flex-wrap:wrap}
+.legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--usat-gray-border);vertical-align:-2px;margin-right:5px}
+.count-pill{display:inline-block;background:var(--usat-blue);color:#fff;font-size:.7rem;padding:2px 9px;border-radius:10px;margin-left:8px;vertical-align:middle}
+footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:center;font-size:.75rem;padding:16px;margin-top:30px}
+.card-foot{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:8px;flex-wrap:wrap}
+.rm-btn{background:#fff;color:var(--usat-red);border:1px solid var(--usat-red);border-radius:3px;font-size:.62rem;font-weight:bold;padding:2px 7px;cursor:pointer;margin-right:auto;letter-spacing:.3px}
+.rm-btn:hover{background:var(--usat-red);color:#fff}
+.card-foot label{font-size:.62rem;color:var(--usat-gray-mid);letter-spacing:.5px}
+.slot-sel{font-family:var(--font-body);font-size:.72rem;padding:2px 3px;border:1px solid var(--usat-gray-border);border-radius:3px;background:#fff;color:var(--usat-blue);font-weight:bold;cursor:pointer}
+.toolbar{display:flex;justify-content:center;gap:12px;margin:10px 0 0}
+.toolbar button{font-family:var(--font-heading);font-size:.72rem;letter-spacing:.5px;padding:8px 16px;border-radius:4px;border:none;cursor:pointer}
+.btn-print{background:var(--usat-red);color:#fff}
+.btn-print:hover{background:#8a0a2b}
+.assign-count{text-align:center;font-size:.75rem;color:var(--usat-gray-mid);margin-top:6px}
+.sync-status{text-align:center;font-size:.72rem;margin-top:3px;color:var(--usat-gray-mid)}
+.sync-status.sync-ok{color:#1B6E3C}
+.sync-status.sync-off{color:var(--usat-red)}
+@media print{
+  .dl-btn,.toolbar,.assign-count,.sync-status,.legend,.pool,.card-foot,.acc-toggle,.stagebar,.signups,.modal-bg,.cstat{display:none !important}
+  .day-block{page-break-after:always}
+  header{padding:12px 20px}
+  header .logo{height:50px}
+  .grid-scroll{overflow:visible;border:1px solid var(--usat-gray-border)}
+  table.grid{min-width:0}
+  body{font-size:12px}
+  @page{size:letter landscape;margin:10mm}
+}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="https://raw.githubusercontent.com/JustinTrolle/USAT-Images/31de75b5f22d823cd0632e8073e30a658d34e7d7/USA_Triathlon_Education_Logo_Transparent.png" alt="USA Triathlon Education">
+  <div class="head-text">
+  <h1>USA TRIATHLON &nbsp;|&nbsp; ENDURANCE EXCHANGE 2027</h1>
+  <div class="sub">Where Innovation Meets Endurance &nbsp;•&nbsp; January 8–10, 2027 &nbsp;•&nbsp; Caribe Royale Orlando &nbsp;•&nbsp; Stage 2: Schedule Builder</div>
+  </div>
+</header>
+<div class="stagebar">
+  <a href="ee27-1-session-intake.html">1 · SESSION INTAKE</a>
+  <a class="here" href="ee27-2-schedule-builder.html">2 · SCHEDULE BUILDER</a>
+  <a href="ee27-3-participant-dashboard.html">3 · PARTICIPANT DASHBOARD</a>
+  <a href="ee27-4-tracking-dashboard.html">4 · TRACKING DASHBOARD</a>
+</div>
+<div class="toolbar">
+  <button class="btn-print" onclick="window.print()">&#128424; PRINT FINAL SCHEDULE</button>
+</div>
+<div class="assign-count" id="assign-count"></div>
+<div class="sync-status" id="sync-status">Connecting to shared schedule…</div>
+<div class="legend"><span><span class="sw" style="background:#E9F0F8"></span>Coach submissions</span><span><span class="sw" style="background:#E6F3E8"></span>Race Director submissions</span><span><span class="sw" style="background:#FDF6E3"></span>Industry Expert submissions</span><span><span class="sw" style="background:#F9E6EA"></span>Keynote submissions</span><span><span class="sw" style="background:#FDF3D7"></span>Panel discussions</span><span><span class="sw" style="background:#F0EAF8"></span>Workshops / Hands-On</span><span><span class="sw" style="background:#FDEBDC"></span>Breakout sessions</span></div>
+<div class="container" id="app"></div>
+<footer>USA Triathlon — Endurance Exchange 2027 Session Planning Grid &nbsp;•&nbsp; Internal planning document</footer>
+<script>
+const SUPA_URL = "https://vzwpdsnxstazpfukdbak.supabase.co";
+const SUPA_KEY = "sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
+const H = {"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+const ROOMS = ["Caribbean Ballroom IV–VI (400)","Boca I & II (85)","Boca V & VI (85)","Boca III & IV (85)"];
+const LETTERS = ["a","b","c","d"];
+const DAY_META = {"1": {"date": "Friday, January 8", "theme": "Day 1 — Innovation and Intelligence", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout (pending approval)"], ["8:00 – 11:00 AM", "band", "Packet Pickup"], ["9:00 – 9:45 AM", "sess", 1], ["10:00 – 10:45 AM", "sess", 2], ["11:00 AM – 12:00 PM", "band", "Light Lunch — Sponsor Opportunity (only if sponsor confirmed)"], ["12:00 – 1:00 PM", "key", "Artificial Intelligence & Innovation Keynote"], ["1:00 – 1:45 PM", "sess", 3], ["2:00 – 2:45 PM", "sess", 4], ["3:00 – 3:45 PM", "band", "Networking Time — Expo Engagement"], ["4:00 – 4:45 PM", "sess", 5], ["5:00 – 5:45 PM", "sess", 6], ["6:00 – 7:00 PM", "band", "Partner Happy Hour (pending partner covers cost)"]]}, "2": {"date": "Saturday, January 9", "theme": "Day 2 — Human Connection and Community", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout (pending approval)"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 10:00 AM", "key", "Human Connection and Community Keynote"], ["10:00 – 10:45 AM", "sess", 7], ["11:00 – 11:45 AM", "sess", 8], ["12:00 – 1:00 PM", "band", "Lunch"], ["1:00 – 1:45 PM", "sess", 9], ["2:00 – 2:45 PM", "sess", 10], ["3:00 – 3:45 PM", "band", "Networking Break"], ["4:00 – 4:45 PM", "sess", 11], ["5:00 – 5:45 PM", "sess", 12], ["6:00 – 7:00 PM", "band", "Partner Happy Hour — Sponsor Opportunity (only if partner willing to pay)"]]}, "3": {"date": "Sunday, January 10", "theme": "Day 3 — The Road to LA2028", "rows": [["7:00 – 8:00 AM", "band", "Fun Run 5K"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 9:45 AM", "key", "2026 State of the Sport Survey Presentation"], ["9:45 – 10:30 AM", "key", "USA Triathlon 2026 Behavioral Data and Trends"], ["10:30 – 11:30 AM", "key", "Panel Discussion: State of the Sport, Data and Trends"], ["11:30 AM – 12:30 PM", "band", "Networking Break + Lunch on own — Sponsor Opportunity (only if partner willing to pay)"], ["12:30 – 1:30 PM", "key", "Action Brainstorming — how to make material come to life"], ["1:45 – 2:30 PM", "sess", 13], ["2:45 – 3:30 PM", "sess", 14]]}};
+const KEYNOTES = [];
+for(const d of ["1","2","3"]) for(const r of DAY_META[d].rows) if(r[1]==="key") KEYNOTES.push(r[2]);
+let PASS = sessionStorage.getItem("ee27_admin_pass")||"";
+let SESSIONS = [];
+let saving = false;
+function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function setSyncStatus(txt, ok){
+  const el = document.getElementById("sync-status");
+  if(el){ el.textContent = txt; el.className = "sync-status " + (ok?"sync-ok":"sync-off"); }
+}
+// ---------- gate ----------
+function gateHTML(msg){
+  return `<div class="gate">
+    <h2>ADMIN ACCESS</h2>
+    <p>Enter the EE27 admin passcode to open the schedule builder.</p>
+    <input id="pass" type="password" placeholder="Passcode" onkeydown="if(event.key==='Enter')login()">
+    <div class="err">${esc(msg||"")}</div>
+    <button class="dl-btn" style="margin-top:6px" onclick="login()">OPEN BUILDER</button>
+  </div>`;
+}
+async function login(){
+  const p = document.getElementById("pass").value.trim();
+  if(!p) return;
+  try{
+    const r = await fetch(SUPA_URL+"/rest/v1/rpc/ee27_check_pass",{method:"POST",headers:H,body:JSON.stringify({p_pass:p})});
+    if(r.ok && await r.json()===true){
+      PASS=p; sessionStorage.setItem("ee27_admin_pass",p);
+      await loadSessions(); build(); startPolling();
+    } else document.getElementById("app").innerHTML = gateHTML("Incorrect passcode — try again.");
+  }catch(e){ document.getElementById("app").innerHTML = gateHTML("Connection problem — try again."); }
+}
+// ---------- data ----------
+let COUNTS = {};
+async function loadSessions(){
+  try{
+    const [r, rs] = await Promise.all([
+      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,org,fmt,track,day,slot,summary,takeaways,notes,folder,status,not_selected,contract_sent,contract_sent_via,contract_signed,locked_in&order=title",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/ee27_selections?select=session_key,selected",{headers:H})
+    ]);
+    if(!r.ok){ setSyncStatus("Sync error — could not load sessions", false); return; }
+    SESSIONS = await r.json();
+    if(rs.ok){
+      COUNTS = {};
+      (await rs.json()).forEach(s=>{ if(s.selected) COUNTS[s.session_key]=(COUNTS[s.session_key]||0)+1; });
+    }
+    setSyncStatus("Live sync on — updated " + new Date().toLocaleTimeString(), true);
+  }catch(e){ setSyncStatus("Offline — could not load sessions", false); }
+}
+function startPolling(){ setInterval(async()=>{ if(saving) return; const openKeys=openCards(); await loadSessions(); build(openKeys); }, 6000); }
+function openCards(){ return new Set([...document.querySelectorAll(".card.open")].map(el=>el.dataset.key)); }
+async function saveSession(key, patch){
+  saving = true;
+  try{
+    const r = await fetch(SUPA_URL+"/rest/v1/rpc/ee27_save_session",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS,p_key:key,p_patch:patch})});
+    if(r.ok) setSyncStatus("Live sync on — saved " + new Date().toLocaleTimeString(), true);
+    else setSyncStatus("Save failed — check connection / passcode", false);
+  }catch(e){ setSyncStatus("Offline — change not saved", false); }
+  saving = false;
+}
+function findSession(slot){ return SESSIONS.find(s=>s.slot===slot && !s.not_selected); }
+function byKey(key){ return SESSIONS.find(s=>s.key===key); }
+// ---------- cards ----------
+function cardHTML(s, showSlot){
+  const badge = s.slot ? `<span class="badge">${esc(s.slot.toUpperCase())}</span>` : "";
+  const fmtClass = /keynote/i.test(s.fmt||"") ? " fmt-key" : (/panel/i.test(s.fmt||"") ? " fmt-panel" : (/^workshop|hands.?on/i.test(s.fmt||"") ? " fmt-workshop" : (/breakout/i.test(s.fmt||"") ? " fmt-breakout" : "")));
+  const takeaways = Array.isArray(s.takeaways)?s.takeaways:[];
+  return `<div class="card track-${esc(s.track)}${fmtClass}" data-key="${esc(s.key)}">
+    ${showSlot?badge:""}
+    <div class="title" onclick="toggle('${esc(s.key)}')">${esc(s.title)}</div>
+    <div class="speaker"><b>${s.folder?`<a class="sp-link" href="${s.folder}" target="_blank" rel="noopener" title="Open ${esc(s.speaker)}'s presenter folder in Google Drive" onclick="event.stopPropagation()">${esc(s.speaker)}</a>`:esc(s.speaker)}</b>${s.org?" · "+esc(s.org):""}</div>
+    <span class="fmt">${esc(s.fmt)}</span><br>
+    <span class="cstat click ${s.not_selected?"no":""}" onclick="toggleNotSelected('${esc(s.key)}')" title="${s.not_selected?"Reviewed but not chosen — click to unmark":"Click to mark as reviewed but not chosen"}">${s.not_selected?"☑":"☐"} NOT SELECTED</span>
+    <span class="cstat click ${s.contract_sent?(s.contract_sent_via==="builder"?"onb":"on"):""}" onclick="toggleSent('${esc(s.key)}')" title="${s.contract_sent?(s.contract_sent_via==="builder"?"Contract marked sent from the Schedule Builder — click to unmark":"Contract marked sent from the Session Intake page — click to unmark"):"Click to mark the EE27 contract as sent"}">${s.contract_sent?"☑":"☐"} SENT</span>
+    <span class="cstat ${s.contract_signed?"on":""}" title="${s.contract_signed?"Presenter has signed — confirmed to speak":"Contract not received yet — tracked on the Session Intake page"}">${s.contract_signed?"☑":"☐"} SIGNED</span>
+    <span class="cstat click ${s.locked_in?"lock":""}" onclick="toggleLocked('${esc(s.key)}')" title="${s.locked_in?"This session is locked in place — click to unlock":"Click to lock this session in place so you know it should not move"}">${s.locked_in?"🔒 LOCKED":"☐ LOCK"}</span><br>
+    <span class="signups ${COUNTS[s.key]?"":"zero"}" onclick="showSignups('${esc(s.key)}')" title="Click to see who signed up and export the list">👥 ${COUNTS[s.key]||0} signed up</span><br>
+    <span class="acc-toggle" onclick="toggle('${esc(s.key)}')">Details</span>
+    <div class="acc-body">
+      <h5>Summary</h5><p>${esc(s.summary)}</p>
+      <h5>Key Takeaways</h5><ul>${takeaways.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+      ${s.notes?`<p class="note">${esc(s.notes)}</p>`:""}
+      <button class="dl-btn" onclick="downloadPDF('${esc(s.key)}')">DOWNLOAD PDF</button>
+      <button class="dl-btn folder-btn" onclick="editFolder('${esc(s.key)}')">${s.folder?"🔗 EDIT FOLDER LINK":"🔗 ADD FOLDER LINK"}</button>
+    </div>
+    <div class="card-foot">
+      ${s.slot?`<button class="rm-btn" onclick="unassign('${esc(s.key)}')" title="Remove from this slot">✕ REMOVE</button>`:""}
+      ${pendingControls(s)}
+      <label>DAY</label>
+      <select class="slot-sel" onchange="pick('${esc(s.key)}','day',this.value)">${dayOptions(s)}</select>
+      <label>SLOT</label>
+      <select class="slot-sel" onchange="pick('${esc(s.key)}','num',this.value)">${numOptions(s)}</select>
+      <select class="slot-sel" onchange="pick('${esc(s.key)}','let',this.value)">${letOptions(s)}</select>
+    </div>
+  </div>`;
+}
+function toggle(key){ const el=document.querySelector(`.card[data-key="${CSS.escape(key)}"]`); if(el) el.classList.toggle("open"); }
+// Selections are held in `pending` and only applied once the pick is complete,
+// so cards don't jump around mid-selection.
+const pending = {};
+// each slot number/keynote implies a day in the grid
+const SLOTDAY = {};
+{ let kk=0; for(const d of ["1","2","3"]) for(const r of DAY_META[d].rows){
+    if(r[1]==="sess") SLOTDAY[String(r[2])]=d;
+    else if(r[1]==="key"){ kk++; SLOTDAY["k"+kk]=d; }
+} }
+function slotTouched(p){ return p && ("num" in p || "let" in p); }
+function pendingControls(s){
+  const p = pending[s.key];
+  if(!p) return "";
+  const dayOnly = p.day!==undefined && !slotTouched(p);
+  return `${dayOnly?`<button class="rm-btn" style="color:#1B6E3C;border-color:#1B6E3C;margin-right:0" onclick="applyDay('${esc(s.key)}')" title="Move this session to the selected day's pool">✓ APPLY DAY</button>`:""}
+    <button class="rm-btn" style="margin-right:0" onclick="cancelPending('${esc(s.key)}')" title="Discard this in-progress selection">✕ CANCEL</button>
+    ${!dayOnly?`<span style="font-size:.6rem;color:var(--usat-gray-mid)">moves when # + letter are both picked</span>`:""}`;
+}
+function dayOptions(s){
+  const p = pending[s.key];
+  const cur = (p && p.day!==undefined) ? p.day : (s.day||"");
+  return `<option value="" ${cur===""?"selected":""}>–</option>`+
+    ["1","2","3","tbd"].map(d=>`<option value="${d}" ${cur===d?"selected":""}>${d==="tbd"?"TBD":d}</option>`).join("");
+}
+function numOptions(s){
+  const p = pending[s.key];
+  const cur = slotTouched(p) ? (p.num||"") : (s.slot ? (s.slot[0]==="k" ? s.slot : String(parseInt(s.slot))) : "");
+  let o = `<option value="">#</option>`;
+  for(let n=1;n<=14;n++) o += `<option value="${n}" ${String(cur)===String(n)?"selected":""}>${n}</option>`;
+  KEYNOTES.forEach((lab,i)=>{ const id="k"+(i+1);
+    o += `<option value="${id}" ${cur===id?"selected":""} title="${esc(lab)}">K${i+1}</option>`; });
+  return o;
+}
+function letOptions(s){
+  const p = pending[s.key];
+  const isKey = (!slotTouched(p) && s.slot && s.slot[0]==="k") || (slotTouched(p) && p.num && p.num[0]==="k");
+  const cur = slotTouched(p) ? (p.let||"") : ((s.slot && s.slot[0]!=="k") ? s.slot.replace(/\d+/,"") : "");
+  let o = `<option value="">–</option>`;
+  for(const L of LETTERS) o += `<option value="${L}" ${(!isKey&&cur===L)?"selected":""}>${L}</option>`;
+  return o;
+}
+async function assignSlot(s, slot){
+  if(s.locked_in && s.slot && s.slot!==slot){
+    if(!confirm(`"${s.title}" is 🔒 LOCKED in slot ${s.slot.toUpperCase()}. Move it anyway?`)){
+      delete pending[s.key]; build(); return;
+    }
+  }
+  const other = SESSIONS.find(x=>x.slot===slot && x.key!==s.key);
+  if(other){
+    const lab = slot[0]==="k" ? `${slot.toUpperCase()} (${KEYNOTES[parseInt(slot.slice(1))-1]||""})` : `Slot ${slot.toUpperCase()}`;
+    const lockWarn = other.locked_in ? "\n\n⚠ WARNING: that session is 🔒 LOCKED in place!" : "";
+    if(!confirm(`${lab} is already assigned to "${other.title}". Replace it? (It will move back to the unassigned pool.)${lockWarn}`)){
+      delete pending[s.key]; build(); return;
+    }
+    other.slot = null;
+    await saveSession(other.key, {slot:"", status:"proposed"});
+  }
+  const day = SLOTDAY[slot[0]==="k" ? slot : String(parseInt(slot))] || s.day;
+  s.slot = slot; s.day = day;
+  delete pending[s.key];
+  build();
+  await saveSession(s.key, {slot:slot, day:day, status:"scheduled"});
+}
+async function pick(key, part, val){
+  const s = byKey(key); if(!s) return;
+  if(!pending[key]) pending[key] = {};
+  const p = pending[key];
+  if(part==="day"){ p.day = val; build(); return; }
+  // keynote slots have no letter — a K pick completes the selection on its own
+  if(part==="num" && val && val[0]==="k"){ await assignSlot(s, val); return; }
+  p[part==="num"?"num":"let"] = val;
+  if(p.num && p.let){ await assignSlot(s, p.num+p.let); return; }
+  if(("num" in p) && ("let" in p) && !p.num && !p.let && s.slot){
+    // both slot boxes explicitly cleared — unassign
+    s.slot = null; delete pending[key];
+    build();
+    await saveSession(key, {slot:"", status:"proposed"});
+    return;
+  }
+  build(); // partial — hold position until the selection is complete
+}
+async function applyDay(key){
+  const s = byKey(key); if(!s) return;
+  const p = pending[key]; if(!p || p.day===undefined) return;
+  s.day = p.day || null;
+  delete pending[key];
+  build();
+  await saveSession(key, {day: p.day});
+}
+function cancelPending(key){
+  delete pending[key];
+  build();
+}
+async function toggleLocked(key){
+  const s = byKey(key); if(!s) return;
+  s.locked_in = !s.locked_in;
+  build();
+  await saveSession(key, {locked_in: s.locked_in});
+}
+async function unassign(key){
+  const s = byKey(key); if(!s) return;
+  if(s.locked_in && !confirm(`"${s.title}" is 🔒 LOCKED in place. Remove it from its slot anyway?`)) return;
+  s.slot = null; delete pending[key];
+  build();
+  await saveSession(key, {slot:"", status:"proposed"});
+}
+async function editFolder(key){
+  const s = byKey(key); if(!s) return;
+  const url = prompt(`Google Drive folder link for:\n"${s.title}"\n\nPaste the folder URL (leave empty to remove the link):`, s.folder||"");
+  if(url===null) return; // cancelled
+  const trimmed = url.trim();
+  if(trimmed && !/^https?:\/\//i.test(trimmed)){ alert("That doesn't look like a link — it should start with https://"); return; }
+  s.folder = trimmed || null;
+  build();
+  await saveSession(key, {folder: trimmed});
+}
+async function toggleSent(key){
+  const s = byKey(key); if(!s) return;
+  s.contract_sent = !s.contract_sent;
+  s.contract_sent_via = s.contract_sent ? "builder" : null;
+  build();
+  await saveSession(key, {contract_sent: s.contract_sent, contract_sent_via: s.contract_sent ? "builder" : ""});
+}
+async function toggleNotSelected(key){
+  const s = byKey(key); if(!s) return;
+  if(!s.not_selected){
+    const slotNote = s.slot ? ` It will be removed from slot ${s.slot.toUpperCase()} and` : " It";
+    if(!confirm(`Mark "${s.title}" as NOT SELECTED?\n\n${slotNote.trim()} will disappear from the Schedule Builder — you can still see it (and unmark it) on the Session Intake page.`)) return;
+    const patch = {not_selected:true};
+    if(s.slot){ patch.slot=""; patch.status="proposed"; s.slot=null; }
+    s.not_selected = true;
+    build();
+    await saveSession(key, patch);
+  } else {
+    s.not_selected = false;
+    build();
+    await saveSession(key, {not_selected:false});
+  }
+}
+// ---------- build ----------
+function build(openKeys){
+  openKeys = openKeys || openCards();
+  if(!PASS) return;
+  let html = "";
+  let kCounter = 0;
+  for(const dayNum of ["1","2","3"]){
+    const meta = DAY_META[dayNum];
+    html += `<div class="day-block">
+      <div class="day-header"><h2>${esc(meta.date).toUpperCase()}</h2><div class="theme">${esc(meta.theme)}</div></div>
+      <div class="grid-scroll"><table class="grid">
+      <tr><th>Time</th>${ROOMS.map(r=>`<th>${esc(r)}</th>`).join("")}</tr>`;
+    for(const [time,type,label] of meta.rows){
+      const rowClass = (type==="sess") ? "slotrow" : "bandrow";
+      html += `<tr class="${rowClass}"><td class="time">${esc(time)}</td>`;
+      if(type==="band"){ html += `<td class="band" colspan="4">${esc(label)}</td>`; }
+      else if(type==="key"){
+        kCounter++; const kid = "k"+kCounter;
+        const ks = findSession(kid);
+        let inner = `<div class="key-label">${esc(label)} <span class="badge">${kid.toUpperCase()}</span></div>`;
+        if(ks){ inner += cardHTML(ks, false); }
+        html += `<td class="keynote" colspan="4">${inner}</td>`;
+      }
+      else{
+        for(let i=0;i<4;i++){
+          const slot = label + LETTERS[i];
+          const s = findSession(slot);
+          if(s) html += `<td class="slotcell">${cardHTML(s, true)}</td>`;
+          else html += `<td class="slotcell"><div class="open-slot"><span class="badge">${slot.toUpperCase()}</span><br>Open</div></td>`;
+        }
+      }
+      html += `</tr>`;
+    }
+    html += `</table></div>`;
+    const pool = SESSIONS.filter(s=>String(s.day)===dayNum && !s.slot && !s.not_selected);
+    if(pool.length){
+      html += `<div class="pool"><h3>Unassigned — ${esc(meta.date)}<span class="count-pill">${pool.length}</span></h3>
+      <div class="hint">Submissions proposed for this day, awaiting a slot. Use the DAY and SLOT selectors on each card.</div>
+      <div class="pool-grid">${pool.map(s=>cardHTML(s, false)).join("")}</div></div>`;
+    }
+    html += `</div>`;
+  }
+  const tbd = SESSIONS.filter(s=>!s.slot && (s.day==="tbd" || !s.day) && !s.not_selected);
+  if(tbd.length){
+    html += `<div class="day-block"><div class="day-header"><h2>NEEDS A DELIBERATE HOME</h2><div class="theme">New or unthemed submissions — assign a day to move them into a day pool</div></div>
+    <div class="pool"><div class="pool-grid">${tbd.map(s=>cardHTML(s, false)).join("")}</div></div></div>`;
+  }
+  document.getElementById("app").innerHTML = html;
+  openKeys.forEach(k=>{ const el=document.querySelector(`.card[data-key="${CSS.escape(k)}"]`); if(el) el.classList.add("open"); });
+  const n = SESSIONS.filter(s=>s.slot).length;
+  const nHidden = SESSIONS.filter(s=>s.not_selected).length;
+  document.getElementById("assign-count").textContent = n + " of 62 slots assigned (56 sessions + 6 keynotes)  •  " + (SESSIONS.length-n-nHidden) + " sessions unassigned" + (nHidden?"  •  "+nHidden+" not selected (hidden here — manage on Session Intake)":"") + "  •  shared live with everyone viewing this page";
+}
+// ---------- signup roster ----------
+let ADMIN_CACHE = null, ADMIN_CACHE_AT = 0;
+async function adminData(){
+  if(ADMIN_CACHE && Date.now()-ADMIN_CACHE_AT < 30000) return ADMIN_CACHE;
+  const r = await fetch(SUPA_URL+"/rest/v1/rpc/ee27_admin_data",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS})});
+  if(!r.ok) throw new Error("admin data failed");
+  ADMIN_CACHE = await r.json(); ADMIN_CACHE_AT = Date.now();
+  return ADMIN_CACHE;
+}
+function roleLabel(a){
+  if(a.roles && a.roles.length) return a.roles.join(", ");
+  return a.role==="coach"?"Coach":a.role==="race_director"?"Race Director":"Other";
+}
+async function showSignups(key){
+  const s = byKey(key); if(!s) return;
+  let d;
+  try{ d = await adminData(); }
+  catch(e){ alert("Could not load the signup list — check your connection."); return; }
+  const att = {}; (d.attendees||[]).forEach(a=>att[a.id]=a);
+  const chk = new Set((d.attendance||[]).filter(t=>t.session_key===key).map(t=>t.attendee_id));
+  const list = (d.selections||[]).filter(x=>x.selected && x.session_key===key)
+    .map(x=>att[x.attendee_id]).filter(Boolean)
+    .sort((a,b)=>a.name.toLowerCase()<b.name.toLowerCase()?-1:1);
+  const slotBit = s.slot ? s.slot.toUpperCase() : "not scheduled";
+  let rows = list.length
+    ? `<table><tr><th>NAME</th><th>ROLE(S)</th><th>EMAIL</th><th>CHECKED IN</th></tr>
+       ${list.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td>${esc(roleLabel(a))}</td><td>${esc(a.email||"")}</td><td>${chk.has(a.id)?"✓":""}</td></tr>`).join("")}</table>`
+    : `<div class="empty">No one has added this session to their schedule yet.</div>`;
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.innerHTML = `<div class="modal">
+    <div class="mh"><h3>${esc(s.title)}</h3>
+      <div class="sub">${esc(s.speaker)} &nbsp;•&nbsp; ${esc(slotBit)} &nbsp;•&nbsp; ${list.length} signed up</div></div>
+    <div class="mb">${rows}</div>
+    <div class="mf">
+      ${list.length?`<button class="m-csv" onclick='exportSignups(${JSON.stringify(key)})'>⬇ DOWNLOAD SIGNUP CSV</button>`:""}
+      <button class="m-close" onclick="this.closest('.modal-bg').remove()">CLOSE</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+}
+async function exportSignups(key){
+  const s = byKey(key); if(!s) return;
+  const d = await adminData();
+  const att = {}; (d.attendees||[]).forEach(a=>att[a.id]=a);
+  const chk = new Set((d.attendance||[]).filter(t=>t.session_key===key).map(t=>t.attendee_id));
+  const list = (d.selections||[]).filter(x=>x.selected && x.session_key===key)
+    .map(x=>att[x.attendee_id]).filter(Boolean)
+    .sort((a,b)=>a.name.toLowerCase()<b.name.toLowerCase()?-1:1);
+  if(!list.length){ alert("No signups to export yet."); return; }
+  const rows = list.map(a=>({
+    session: s.title, slot: s.slot?s.slot.toUpperCase():"", speaker: s.speaker,
+    name: a.name, roles: roleLabel(a), email: a.email||"", checked_in: chk.has(a.id)?"yes":"no"
+  }));
+  const cols = Object.keys(rows[0]);
+  const q = v=>{ v = v==null?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const csv = cols.join(",")+"\n"+rows.map(r=>cols.map(c=>q(r[c])).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}));
+  a.download = (s.slot?s.slot.toUpperCase()+"_":"") + s.title.replace(/[^a-z0-9]+/gi,"_").slice(0,50) + "_signups.csv";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+// ---------- PDF ----------
+function downloadPDF(key){
+  const s = byKey(key); if(!s) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt", format:"letter"});
+  const W = 612, M = 54, CW = W - M*2;
+  let y = 0;
+  doc.setFillColor(0,42,92); doc.rect(0,0,W,70,"F");
+  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(13);
+  doc.text("USA TRIATHLON  |  ENDURANCE EXCHANGE 2027", M, 30);
+  doc.setFontSize(9); doc.setFont("helvetica","italic");
+  doc.text("Where Innovation Meets Endurance  •  January 8–10, 2027  •  Caribe Royale Orlando", M, 48);
+  y = 100;
+  if(s.slot){
+    doc.setFillColor(168,12,52); doc.roundedRect(M, y-14, 60, 20, 3, 3, "F");
+    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont("helvetica","bold");
+    doc.text("SESSION "+s.slot.toUpperCase(), M+30, y, {align:"center"});
+    y += 24;
+  }
+  doc.setTextColor(0,42,92); doc.setFont("helvetica","bold"); doc.setFontSize(15);
+  const tl = doc.splitTextToSize(s.title, CW); doc.text(tl, M, y); y += tl.length*18 + 6;
+  doc.setTextColor(26,26,26); doc.setFontSize(11);
+  doc.text(s.speaker + (s.org ? "  ·  " + s.org : ""), M, y); y += 15;
+  doc.setFont("helvetica","normal"); doc.setTextColor(74,74,74); doc.setFontSize(10);
+  doc.text("Format: " + (s.fmt||""), M, y); y += 24;
+  doc.setTextColor(168,12,52); doc.setFont("helvetica","bold"); doc.setFontSize(11);
+  doc.text("SUMMARY", M, y); y += 14;
+  doc.setTextColor(26,26,26); doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  const sl = doc.splitTextToSize(s.summary||"", CW); doc.text(sl, M, y); y += sl.length*13 + 14;
+  doc.setTextColor(168,12,52); doc.setFont("helvetica","bold"); doc.setFontSize(11);
+  doc.text("KEY TAKEAWAYS", M, y); y += 14;
+  doc.setTextColor(26,26,26); doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  for(const t of (Array.isArray(s.takeaways)?s.takeaways:[])){
+    const bl = doc.splitTextToSize(t, CW-14);
+    if(y + bl.length*13 > 720){ doc.addPage(); y = 60; }
+    doc.text("•", M, y); doc.text(bl, M+14, y);
+    y += bl.length*13 + 4;
+  }
+  if(s.notes){
+    y += 8;
+    if(y > 680){ doc.addPage(); y = 60; }
+    doc.setFont("helvetica","italic"); doc.setTextColor(74,74,74);
+    const nl = doc.splitTextToSize("Note: " + s.notes, CW); doc.text(nl, M, y);
+  }
+  const fname = (s.slot ? s.slot.toUpperCase()+"_" : "") + s.title.replace(/[^a-z0-9]+/gi,"_").slice(0,60) + ".pdf";
+  doc.save(fname);
+}
+// ---------- init ----------
+(async()=>{
+  if(PASS){
+    try{
+      const r = await fetch(SUPA_URL+"/rest/v1/rpc/ee27_check_pass",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS})});
+      if(r.ok && await r.json()===true){ await loadSessions(); build(); startPolling(); return; }
+    }catch(e){}
+  }
+  document.getElementById("app").innerHTML = gateHTML("");
+  setSyncStatus("Sign in to load the shared schedule", false);
+})();
+</script>
+</body>
+</html>
