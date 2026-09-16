@@ -112,7 +112,7 @@ async function login(){
 }
 // ---------- main ----------
 async function loadExisting(){
-  const r=await fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,sheet_sig,slot,day,source,folder,fmt,track,summary,takeaways,not_selected,contract_sent,contract_signed,content_uploaded,content_created&order=title",{headers:H});
+  const r=await fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,sheet_sig,slot,day,source,folder,fmt,track,coach_track,summary,takeaways,not_selected,contract_sent,contract_signed,content_uploaded,content_created&order=title",{headers:H});
   EXISTING=r.ok?await r.json():[];
 }
 function byKey(key){return EXISTING.find(s=>s.key===key)}
@@ -152,7 +152,7 @@ function render(){
   <div id="preview"></div>
   <h3 class="sec">CURRENT DATABASE <span class="stamp">(${EXISTING.length} sessions · ${EXISTING.filter(s=>s.not_selected).length} not selected · ${EXISTING.filter(s=>s.folder).length} with folders · contracts: ${EXISTING.filter(s=>s.contract_sent).length} sent / ${EXISTING.filter(s=>s.contract_signed).length} signed · content: ${EXISTING.filter(s=>s.content_uploaded).length} uploaded / ${EXISTING.filter(s=>s.content_created).length} created)</span></h3>
   <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
-  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
+  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Coach track level (T1–T4)">COACH<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
   ${EXISTING.map(dbRowHTML).join("")}
   </table></div>`;
   m.innerHTML=html;
@@ -174,6 +174,9 @@ function dbRowHTML(s){
     <td>${esc(s.speaker)}</td>
     <td><select onchange="setField('${esc(s.key)}','track',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px">
       ${TRACKS.map(([v,l])=>`<option value="${v}" ${s.track===v?"selected":""}>${l}</option>`).join("")}</select></td>
+    <td class="num"><select onchange="setField('${esc(s.key)}','coach_track',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;font-weight:bold;color:var(--usat-blue)">
+      <option value="" ${!s.coach_track?"selected":""}>–</option>
+      ${["T1","T2","T3","T4"].map(t=>`<option value="${t}" ${s.coach_track===t?"selected":""}>${t}</option>`).join("")}</select></td>
     <td><select onchange="setField('${esc(s.key)}','fmt',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;max-width:170px">
       ${fmtOpts.map(o=>`<option ${s.fmt===o?"selected":""}>${esc(o)}</option>`).join("")}</select></td>
     <td>${esc(s.day||"—")}</td>
@@ -189,7 +192,7 @@ function dbRowHTML(s){
     <td class="num"><input type="checkbox" ${s.content_created?"checked":""} onchange="setCheck('${esc(s.key)}','content_created',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Digital content created"></td>
   </tr>`;
   if(OPEN_ROWS.has(s.key)){
-    h+=`<tr><td colspan="12" style="background:#F8FAFC;padding:12px 16px">
+    h+=`<tr><td colspan="13" style="background:#F8FAFC;padding:12px 16px">
       ${s.summary?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">SUMMARY</div><p style="font-size:.8rem;line-height:1.5;margin-bottom:10px">${esc(s.summary)}</p>`:""}
       ${takeaways.length?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">KEY TAKEAWAYS</div><ul style="font-size:.8rem;line-height:1.5;padding-left:18px">${takeaways.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
       ${!s.summary&&!takeaways.length?`<span class="stamp">No summary or takeaways on file for this session.</span>`:""}
