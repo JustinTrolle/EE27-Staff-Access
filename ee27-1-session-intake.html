@@ -152,7 +152,7 @@ function render(){
   <div id="preview"></div>
   <h3 class="sec">CURRENT DATABASE <span class="stamp">(${EXISTING.length} sessions · ${EXISTING.filter(s=>s.not_selected).length} not selected · ${EXISTING.filter(s=>s.folder).length} with folders · contracts: ${EXISTING.filter(s=>s.contract_sent).length} sent / ${EXISTING.filter(s=>s.contract_signed).length} signed · content: ${EXISTING.filter(s=>s.content_uploaded).length} uploaded / ${EXISTING.filter(s=>s.content_created).length} created)</span></h3>
   <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
-  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Presenter track level (T1–T4)">PRESENTER<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
+  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Presenter track level (T1–T4, or AT = All Tracks)">PRESENTER<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
   ${EXISTING.map(dbRowHTML).join("")}
   </table></div>`;
   m.innerHTML=html;
@@ -176,7 +176,7 @@ function dbRowHTML(s){
       ${TRACKS.map(([v,l])=>`<option value="${v}" ${s.track===v?"selected":""}>${l}</option>`).join("")}</select></td>
     <td class="num"><select onchange="setField('${esc(s.key)}','coach_track',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;font-weight:bold;color:var(--usat-blue)">
       <option value="" ${!s.coach_track?"selected":""}>–</option>
-      ${["T1","T2","T3","T4"].map(t=>`<option value="${t}" ${s.coach_track===t?"selected":""}>${t}</option>`).join("")}</select></td>
+      ${["T1","T2","T3","T4","AT"].map(t=>`<option value="${t}" ${s.coach_track===t?"selected":""} ${t==="AT"?'title="All Tracks"':""}>${t}</option>`).join("")}</select></td>
     <td><select onchange="setField('${esc(s.key)}','fmt',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;max-width:170px">
       ${fmtOpts.map(o=>`<option ${s.fmt===o?"selected":""}>${esc(o)}</option>`).join("")}</select></td>
     <td>${esc(s.day||"—")}</td>
