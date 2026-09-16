@@ -150,7 +150,8 @@ function render(){
     </div>
   </div>
   <div id="preview"></div>
-  <h3 class="sec">CURRENT DATABASE <span class="stamp">(${EXISTING.length} sessions · ${EXISTING.filter(s=>s.not_selected).length} not selected · ${EXISTING.filter(s=>s.folder).length} with folders · contracts: ${EXISTING.filter(s=>s.contract_sent).length} sent / ${EXISTING.filter(s=>s.contract_signed).length} signed · content: ${EXISTING.filter(s=>s.content_uploaded).length} uploaded / ${EXISTING.filter(s=>s.content_created).length} created)</span></h3>
+  <h3 class="sec">CURRENT DATABASE <span class="stamp">(${EXISTING.length} sessions · ${EXISTING.filter(s=>s.not_selected).length} not selected · ${EXISTING.filter(s=>s.folder).length} with folders · contracts: ${EXISTING.filter(s=>s.contract_sent).length} sent / ${EXISTING.filter(s=>s.contract_signed).length} signed · content: ${EXISTING.filter(s=>s.content_uploaded).length} uploaded / ${EXISTING.filter(s=>s.content_created).length} created)</span>
+  <div class="stamp" style="margin-top:4px;font-weight:bold;color:var(--usat-blue)">Presenter tracks: ${["T1","T2","T3","T4","AT"].map(t=>`${t} <span style="background:var(--usat-blue-tint);padding:1px 7px;border-radius:8px">${EXISTING.filter(s=>s.coach_track===t).length}</span>`).join(" &nbsp; ")} &nbsp; <span style="font-weight:normal">· ${EXISTING.filter(s=>!s.coach_track).length} unassigned</span></div></h3>
   <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
   <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Presenter track level (T1–T4, or AT = All Tracks)">PRESENTER<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
   ${EXISTING.map(dbRowHTML).join("")}
@@ -207,7 +208,8 @@ function toggleRow(key){
 async function setField(key,field,val){
   const s=byKey(key);if(!s)return;
   const old=s[field];s[field]=val;
-  if(!await saveSession(key,{[field]:val})){s[field]=old;render();}
+  if(!await saveSession(key,{[field]:val})){s[field]=old;render();return}
+  if(field==="coach_track")render(); // refresh the track tallies in the header
 }
 async function setCheck(key,field,el){
   const s=byKey(key);if(!s)return;
