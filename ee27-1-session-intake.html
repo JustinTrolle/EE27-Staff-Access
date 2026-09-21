@@ -53,6 +53,8 @@ table.rpt td{border:1px solid var(--usat-gray-border);padding:6px 8px;vertical-a
 table.rpt tr:nth-child(even) td{background:#F8FAFC}
 table.rpt tr.locked td{background:#DCEFE0 !important}
 table.rpt tr.locked td:first-child b::after{content:" 🔒";font-size:.7rem}
+table.rpt tr.notsel td{background:#F5DDE2 !important}
+table.rpt tr.notsel td:first-child b{color:var(--usat-red)}
 .chip{display:inline-block;font-family:var(--font-heading);font-size:.6rem;letter-spacing:.5px;padding:2px 8px;border-radius:3px;color:#fff}
 .chip.new{background:var(--usat-red)}
 .chip.match{background:var(--usat-blue)}
@@ -172,7 +174,7 @@ const OPEN_ROWS=new Set();
 function dbRowHTML(s){
   const fmtOpts=(FORMATS.includes(s.fmt)?FORMATS:[s.fmt||"—",...FORMATS]);
   const takeaways=Array.isArray(s.takeaways)?s.takeaways:[];
-  let h=`<tr class="${s.locked_in?"locked":""}">
+  let h=`<tr class="${s.not_selected?"notsel":s.locked_in?"locked":""}">
     <td><b style="cursor:pointer;color:var(--usat-blue)" onclick="toggleRow('${esc(s.key)}')" title="Show summary and key takeaways">${OPEN_ROWS.has(s.key)?"▾":"▸"} ${esc(s.title)}</b></td>
     <td>${esc(s.speaker)}</td>
     <td><select onchange="setField('${esc(s.key)}','track',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px">
@@ -195,7 +197,7 @@ function dbRowHTML(s){
     <td class="num"><input type="checkbox" ${s.content_created?"checked":""} onchange="setCheck('${esc(s.key)}','content_created',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Digital content created"></td>
   </tr>`;
   if(OPEN_ROWS.has(s.key)){
-    h+=`<tr class="${s.locked_in?"locked":""}"><td colspan="13" style="background:#F8FAFC;padding:12px 16px">
+    h+=`<tr class="${s.not_selected?"notsel":s.locked_in?"locked":""}"><td colspan="13" style="background:#F8FAFC;padding:12px 16px">
       ${s.summary?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">SUMMARY</div><p style="font-size:.8rem;line-height:1.5;margin-bottom:10px">${esc(s.summary)}</p>`:""}
       ${takeaways.length?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">KEY TAKEAWAYS</div><ul style="font-size:.8rem;line-height:1.5;padding-left:18px">${takeaways.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
       ${!s.summary&&!takeaways.length?`<span class="stamp">No summary or takeaways on file for this session.</span>`:""}
