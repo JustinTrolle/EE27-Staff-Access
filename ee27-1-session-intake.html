@@ -293,17 +293,21 @@ function matchRow(sub){
   if(m)return m;
   m=EXISTING.find(s=>norm(s.title)===norm(sub.title));
   if(m)return m;
-  // fuzzy: surname + title word overlap
+  // fuzzy: same presenter AND the titles are nearly the same set of words.
+  // A presenter submitting a second, different talk must come through as NEW,
+  // so a mere surname + a couple of shared words is not enough.
   const ln=lastName(sub.name);
-  const words=new Set(norm(sub.title).split(" ").filter(w=>w.length>3));
-  let best=null,bestScore=0;
+  const subWords=new Set(norm(sub.title).split(" ").filter(w=>w.length>3));
+  let best=null,bestRatio=0;
   for(const s of EXISTING){
     const nameHit=ln&&norm(s.speaker).includes(ln);
-    let ov=0;norm(s.title).split(" ").forEach(w=>{if(w.length>3&&words.has(w))ov++});
-    const score=(nameHit?5:0)+ov;
-    if(score>bestScore){bestScore=score;best=s}
+    if(!nameHit)continue;
+    const exWords=new Set(norm(s.title).split(" ").filter(w=>w.length>3));
+    let ov=0;subWords.forEach(w=>{if(exWords.has(w))ov++});
+    const ratio=ov/Math.max(subWords.size,exWords.size,1);
+    if(ratio>bestRatio){bestRatio=ratio;best=s}
   }
-  return bestScore>=7?best:null;
+  return bestRatio>=0.75?best:null;
 }
 function buildPlan(){
   PLAN=PARSED.map(sub=>{
