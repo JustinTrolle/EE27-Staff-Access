@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EE27 Stage 1 — Session Intake</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root{
   --usat-red:#A80C34; --usat-blue:#002A5C; --usat-blue-dark:#001F47;
@@ -159,13 +160,69 @@ function render(){
   <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
   <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Presenter track level (T1–T4, or AT = All Tracks)">PRESENTER<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
   ${EXISTING.map(dbRowHTML).join("")}
-  </table></div>`;
+  </table></div>
+  <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <button class="btn" onclick="exportLocked()">⬇ DOWNLOAD LOCKED SESSIONS (EXCEL)</button>
+    <span class="stamp">Every session that is in a time slot and marked 🔒 LOCKED on the Schedule Builder (${EXISTING.filter(s=>s.slot&&s.locked_in&&!s.not_selected).length} right now), with a Track Summary tab.</span>
+  </div>`;
   m.innerHTML=html;
   const d=document.getElementById("drop");
   d.addEventListener("dragover",e=>{e.preventDefault();d.classList.add("on")});
   d.addEventListener("dragleave",()=>d.classList.remove("on"));
   d.addEventListener("drop",e=>{e.preventDefault();d.classList.remove("on");if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0])});
   if(PLAN)showPreview();
+}
+
+// ---------- locked-sessions Excel export ----------
+const XL_ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV"];
+const XL_DAYS={"1":"Friday, Jan 8","2":"Saturday, Jan 9","3":"Sunday, Jan 10"};
+const XL_TIMES={1:"9:00 – 9:45 AM",2:"10:00 – 10:45 AM",3:"1:00 – 1:45 PM",4:"2:00 – 2:45 PM",5:"4:00 – 4:45 PM",6:"5:00 – 5:45 PM",
+  7:"10:00 – 10:45 AM",8:"11:00 – 11:45 AM",9:"1:00 – 1:45 PM",10:"2:00 – 2:45 PM",11:"4:00 – 4:45 PM",12:"5:00 – 5:45 PM",13:"1:45 – 2:30 PM",14:"2:45 – 3:30 PM"};
+const XL_KEY={k1:["1","12:00 – 1:00 PM"],k2:["2","9:00 – 10:00 AM"],k3:["3","9:00 – 9:45 AM"],k4:["3","9:45 – 10:30 AM"],k5:["3","10:30 – 11:30 AM"],k6:["3","12:30 – 1:30 PM"]};
+// chronological order within each day (keynotes interleaved where they fall)
+const XL_ORD={"1":["1","2","k1","3","4","5","6"],"2":["k2","7","8","9","10","11","12"],"3":["k3","k4","k5","k6","13","14"]};
+function xlSlotInfo(slot){
+  if(slot[0]==="k"){const k=XL_KEY[slot];return k?{day:k[0],time:k[1],room:"General Session – Caribbean Ballroom",ord:XL_ORD[k[0]].indexOf(slot),letter:""}:null}
+  const n=parseInt(slot),L=slot.slice(String(n).length);const day=n<=6?"1":n<=12?"2":"3";
+  return {day,time:XL_TIMES[n]||"",room:XL_ROOMS["abcd".indexOf(L)]||"",ord:XL_ORD[day].indexOf(String(n)),letter:L};
+}
+async function exportLocked(){
+  if(typeof ExcelJS==="undefined"){alert("The Excel library didn't load — check your connection and reload the page.");return}
+  const list=EXISTING.filter(s=>s.slot&&s.locked_in&&!s.not_selected).map(s=>({s,i:xlSlotInfo(s.slot)})).filter(x=>x.i)
+    .sort((a,b)=>(a.i.day-b.i.day)||(a.i.ord-b.i.ord)||a.i.letter.localeCompare(b.i.letter));
+  if(!list.length){alert("No locked sessions in time slots yet.");return}
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet("Locked Sessions",{views:[{state:"frozen",ySplit:1}]});
+  ws.columns=[{width:16},{width:6},{width:18},{width:30},{width:30},{width:70},{width:15},{width:16}];
+  const thin={style:"thin",color:{argb:"FFCCCCCC"}},border={top:thin,left:thin,bottom:thin,right:thin};
+  const hdr=ws.addRow(["Day","Slot","Time","Room","Presenter","Topic","Presenter Track","Format"]);
+  hdr.eachCell(c=>{c.font={name:"Arial",size:10,bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF002A5C"}};c.border=border});
+  for(const {s,i} of list){
+    const r=ws.addRow([XL_DAYS[i.day],s.slot.toUpperCase(),i.time,i.room,s.speaker,s.title,s.coach_track||"",s.fmt||""]);
+    r.eachCell({includeEmpty:true},c=>{c.font={name:"Arial",size:10};c.border=border;c.alignment={vertical:"top"}});
+    r.getCell(6).alignment={vertical:"top",wrapText:true};
+    r.getCell(2).alignment={vertical:"top",horizontal:"center"};r.getCell(7).alignment={vertical:"top",horizontal:"center"};
+  }
+  const last=list.length+1;
+  ws.autoFilter={from:"A1",to:"H"+last};
+  const ss=wb.addWorksheet("Track Summary");
+  ss.columns=[{width:18},{width:16}];
+  const sh=ss.addRow(["Presenter Track","Locked sessions"]);
+  sh.eachCell(c=>{c.font={name:"Arial",size:10,bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF002A5C"}};c.border=border});
+  ["T1","T2","T3","T4","AT"].forEach((tr,k)=>{
+    const r=ss.addRow([tr,{formula:"COUNTIF('Locked Sessions'!$G$2:$G$"+last+",A"+(k+2)+")"}]);
+    r.eachCell(c=>{c.font={name:"Arial",size:10};c.border=border});r.getCell(2).alignment={horizontal:"center"};
+  });
+  const tot=ss.addRow(["Total",{formula:"SUM(B2:B6)"}]);
+  tot.eachCell(c=>{c.font={name:"Arial",size:10,bold:true};c.border=border});tot.getCell(2).alignment={horizontal:"center"};
+  ss.addRow([]);
+  const note=ss.addRow(["Source: EE27 schedule database, sessions with a slot and marked LOCKED, as of "+new Date().toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})+". Counts are live formulas over the Locked Sessions tab."]);
+  note.getCell(1).font={name:"Arial",size:9,italic:true};
+  const buf=await wb.xlsx.writeBuffer();
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  a.download="EE27 Locked Sessions - "+new Date().toISOString().slice(0,10)+".xlsx";
+  a.click();URL.revokeObjectURL(a.href);
 }
 // ---------- current database table ----------
 const TRACKS=[["coach","Coach"],["rd","Race Director"],["industry","Industry Expert"]];
