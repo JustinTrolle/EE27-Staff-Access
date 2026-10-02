@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EE27 Stage 1 — Session Intake</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --usat-red:#A80C34; --usat-blue:#002A5C; --usat-blue-dark:#001F47;
@@ -134,7 +135,11 @@ async function start(){
 }
 function render(){
   const m=document.getElementById("main");
-  let html=`<div class="kpis">
+  let html=`<div class="panel" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 16px;margin-bottom:14px">
+    <button class="btn" onclick="backupAll()">💾 BACK UP TO EXTERNAL DRIVE</button>
+    <span class="stamp" id="bk-status">Writes the site files and every database table into your backup folder (F: drive). Chrome/Edge: pick the folder the first time, then it is remembered. Other browsers get a ZIP download.</span>
+  </div>
+  <div class="kpis">
     <div class="kpi"><div class="n">${EXISTING.length}</div><div class="l">Sessions in database</div></div>
     <div class="kpi green"><div class="n">${EXISTING.filter(s=>s.slot).length}</div><div class="l">Scheduled to a slot</div></div>
     <div class="kpi red"><div class="n">${EXISTING.filter(s=>!s.slot).length}</div><div class="l">Awaiting a slot</div></div>
@@ -174,6 +179,86 @@ function render(){
   if(PLAN)showPreview();
 }
 
+// ---------- full backup to external drive ----------
+const BK_FILES=["index.html","ee27-1-session-intake.html","ee27-2-schedule-builder.html","ee27-3-participant-dashboard.html","ee27-4-tracking-dashboard.html","EE27-README.md"];
+const NL=String.fromCharCode(10);
+function bkStatus(m,ok){const e=document.getElementById("bk-status");if(e){e.textContent=m;e.className=ok===false?"err":ok?"ok":"stamp"}}
+function toCSV(rows){
+  if(!rows||!rows.length)return "";
+  const cols=Object.keys(rows[0]);
+  const q=v=>{if(v==null)v="";else if(typeof v==="object")v=JSON.stringify(v);v=String(v);
+    return (v.includes('"')||v.includes(",")||v.includes(NL))?'"'+v.split('"').join('""')+'"':v};
+  return cols.join(",")+NL+rows.map(r=>cols.map(c=>q(r[c])).join(",")).join(NL);
+}
+function bkDB(){return new Promise((res,rej)=>{const r=indexedDB.open("ee27-backup",1);r.onupgradeneeded=()=>r.result.createObjectStore("h");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function bkGetHandle(){try{const db=await bkDB();return await new Promise((res,rej)=>{const t=db.transaction("h").objectStore("h").get("dir");t.onsuccess=()=>res(t.result||null);t.onerror=()=>rej(t.error)})}catch(e){return null}}
+async function bkSetHandle(h){try{const db=await bkDB();await new Promise((res,rej)=>{const t=db.transaction("h","readwrite").objectStore("h").put(h,"dir");t.onsuccess=()=>res();t.onerror=()=>rej(t.error)})}catch(e){}}
+async function bkCollect(){
+  const [rs,ra]=await Promise.all([
+    fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=*&order=title",{headers:H}),
+    fetch(SUPA_URL+"/rest/v1/rpc/ee27_admin_data",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS})})
+  ]);
+  if(!rs.ok||!ra.ok)throw new Error("Could not read the database (check passcode / connection).");
+  const sessions=await rs.json(),admin=await ra.json();
+  const tables={sessions,contacts:admin.contacts||[],attendees:admin.attendees||[],selections:admin.selections||[],
+    attendance:admin.attendance||[],feedback:admin.feedback||[],event_survey:admin.event_survey||[]};
+  const files=[];
+  for(const [name,rows] of Object.entries(tables)){
+    files.push(["data/"+name+".json",JSON.stringify(rows,null,1)]);
+    if(rows.length)files.push(["data/"+name+".csv",String.fromCharCode(65279)+toCSV(rows)]);
+  }
+  for(const f of BK_FILES){
+    try{const r=await fetch(f,{cache:"no-store"});if(r.ok)files.push(["site/"+f,await r.text()])}catch(e){}
+  }
+  const manifest={backed_up_at:new Date().toISOString(),backed_up_from:location.origin,survey_opens_at:admin.survey_opens_at||null,
+    sessions:sessions.length,locked_sessions:sessions.filter(s=>s.locked_in&&!s.not_selected).length,
+    attendees:tables.attendees.length,feedback:tables.feedback.length,survey_responses:tables.event_survey.length,
+    github_main:"https://github.com/JustinTrolle/EE27-Event-System",github_mirror:"https://github.com/JustinTrolle/EE27-Staff-Access",
+    supabase_project:"vzwpdsnxstazpfukdbak"};
+  files.push(["backup-manifest.json",JSON.stringify(manifest,null,1)]);
+  files.push(["RESTORE.md",["# EE27 Restore Guide","",
+    "Site code: https://github.com/JustinTrolle/EE27-Event-System (git clone it on any machine to get a working copy).",
+    "Staff mirror: https://github.com/JustinTrolle/EE27-Staff-Access","Live site: https://enduranceexchange2027.com",
+    "Database: Supabase project vzwpdsnxstazpfukdbak (Pro plan: daily backups, 7-day retention).","",
+    "This folder: site/ = the published pages; data/*.json = exact table exports; data/*.csv = Excel-friendly copies.",
+    "To restore data: Supabase SQL editor or Table Editor, load sessions first (its key column is referenced by every other table), then contacts, attendees, then the rest.",
+    "Full guide lives in RESTORE.md at the root of the backup drive folder."].join(NL)]);
+  return {files,manifest};
+}
+async function backupAll(){
+  bkStatus("Collecting site files and database tables…");
+  let bundle;
+  try{bundle=await bkCollect()}catch(e){bkStatus(e.message||"Backup failed.",false);return}
+  const stamp=new Date();
+  const pad=n=>String(n).padStart(2,"0");
+  const folderName="EE27 Backup "+stamp.getFullYear()+"-"+pad(stamp.getMonth()+1)+"-"+pad(stamp.getDate())+" "+pad(stamp.getHours())+pad(stamp.getMinutes());
+  const summary=bundle.manifest.sessions+" sessions ("+bundle.manifest.locked_sessions+" locked), "+bundle.manifest.attendees+" attendees, "+bundle.manifest.feedback+" feedback, "+bundle.manifest.survey_responses+" survey responses";
+  if(window.showDirectoryPicker){
+    try{
+      let dir=await bkGetHandle();
+      if(dir){const p=await dir.requestPermission({mode:"readwrite"});if(p!=="granted")dir=null}
+      if(!dir){dir=await window.showDirectoryPicker({mode:"readwrite",id:"ee27-backup"});await bkSetHandle(dir)}
+      const root=await dir.getDirectoryHandle(folderName,{create:true});
+      for(const [path,content] of bundle.files){
+        const parts=path.split("/");let d=root;
+        for(let i=0;i<parts.length-1;i++)d=await d.getDirectoryHandle(parts[i],{create:true});
+        const fh=await d.getFileHandle(parts[parts.length-1],{create:true});
+        const w=await fh.createWritable();await w.write(content);await w.close();
+      }
+      bkStatus("Backed up to "+dir.name+" / "+folderName+" — "+summary+".",true);
+      return;
+    }catch(e){
+      if(e&&e.name==="AbortError"){bkStatus("Backup cancelled — no folder chosen.",false);return}
+      bkStatus("Couldn't write to the folder ("+(e.message||e)+") — downloading a ZIP instead…");
+    }
+  }
+  if(typeof JSZip==="undefined"){bkStatus("ZIP library didn't load — reload the page and try again.",false);return}
+  const zip=new JSZip();const zf=zip.folder(folderName);
+  for(const [path,content] of bundle.files)zf.file(path,content);
+  const blob=await zip.generateAsync({type:"blob"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=folderName+".zip";a.click();URL.revokeObjectURL(a.href);
+  bkStatus("Downloaded "+folderName+".zip — move it to your backup drive. "+summary+".",true);
+}
 // ---------- locked-sessions Excel export ----------
 const XL_ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV"];
 const XL_DAYS={"1":"Friday, Jan 8","2":"Saturday, Jan 9","3":"Sunday, Jan 10"};
