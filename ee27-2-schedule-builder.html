@@ -37,14 +37,14 @@ header .sub{margin-top:6px;font-size:.9rem;color:rgba(255,255,255,.85);font-styl
 .day-header h2{font-family:var(--font-heading);font-size:1.15rem}
 .day-header .theme{font-size:.85rem;color:rgba(255,255,255,.9);margin-top:2px}
 .grid-scroll{overflow-x:auto;border:1px solid var(--usat-gray-border);border-top:none}
-table.grid{border-collapse:collapse;width:100%;min-width:1100px}
+table.grid{border-collapse:collapse;width:100%;min-width:1320px}
 table.grid tr.slotrow,table.grid tr.bandrow{height:140px}
 table.grid th{background:var(--usat-blue);color:#fff;font-family:var(--font-heading);font-weight:normal;font-size:.8rem;padding:10px 8px;border:1px solid var(--usat-gray-border)}
 table.grid td{border:1px solid var(--usat-gray-border);vertical-align:top;padding:0}
 td.time{background:var(--usat-blue-tint);color:var(--usat-blue);font-weight:bold;font-size:.8rem;text-align:center;padding:10px 6px;white-space:nowrap;width:130px;vertical-align:middle}
 td.band{background:var(--usat-gray-light);font-weight:bold;text-align:center;padding:10px;font-size:.85rem;vertical-align:middle}
 td.keynote{background:var(--usat-blue-dark);color:#fff;font-weight:bold;text-align:center;padding:12px;font-size:.9rem;vertical-align:middle}
-td.slotcell{width:23%;background:#fff}
+td.slotcell{width:18%;background:#fff}
 .open-slot{padding:14px 10px;text-align:center;color:var(--usat-gray-mid);font-size:.8rem}
 .open-slot .badge{opacity:.55}
 .badge{display:inline-block;background:var(--usat-red);color:#fff;font-family:var(--font-heading);font-size:.7rem;padding:2px 8px;border-radius:3px;letter-spacing:.5px}
@@ -189,8 +189,8 @@ footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:c
 const SUPA_URL = "https://vzwpdsnxstazpfukdbak.supabase.co";
 const SUPA_KEY = "sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
 const H = {"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
-const ROOMS = ["Caribbean Ballroom IV–VI (400)","Boca I & II (85)","Boca V & VI (85)","Boca III & IV (85)"];
-const LETTERS = ["a","b","c","d"];
+const ROOMS = ["Caribbean Ballroom IV–VI (400)","Boca I & II (85)","Boca V & VI (85)","Boca III & IV (85)","Caribbean I–III (85)"];
+const LETTERS = ["a","b","c","d","e"];
 const DAY_META = {"1": {"date": "Friday, January 8", "theme": "Day 1 — Innovation and Intelligence", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout (pending approval)"], ["8:00 – 11:00 AM", "band", "Packet Pickup"], ["9:00 – 9:45 AM", "sess", 1], ["10:00 – 10:45 AM", "sess", 2], ["11:00 AM – 12:00 PM", "band", "Light Lunch — Sponsor Opportunity (only if sponsor confirmed)"], ["12:00 – 1:00 PM", "key", "Artificial Intelligence & Innovation Keynote"], ["1:00 – 1:45 PM", "sess", 3], ["2:00 – 2:45 PM", "sess", 4], ["3:00 – 3:45 PM", "band", "Networking Time — Expo Engagement"], ["4:00 – 4:45 PM", "sess", 5], ["5:00 – 5:45 PM", "sess", 6], ["6:00 – 7:00 PM", "band", "Partner Happy Hour (pending partner covers cost)"]]}, "2": {"date": "Saturday, January 9", "theme": "Day 2 — Human Connection and Community", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout (pending approval)"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 10:00 AM", "key", "Human Connection and Community Keynote"], ["10:00 – 10:45 AM", "sess", 7], ["11:00 – 11:45 AM", "sess", 8], ["12:00 – 1:00 PM", "band", "Lunch"], ["1:00 – 1:45 PM", "sess", 9], ["2:00 – 2:45 PM", "sess", 10], ["3:00 – 3:45 PM", "band", "Networking Break"], ["4:00 – 4:45 PM", "sess", 11], ["5:00 – 5:45 PM", "sess", 12], ["6:00 – 7:00 PM", "band", "Partner Happy Hour — Sponsor Opportunity (only if partner willing to pay)"]]}, "3": {"date": "Sunday, January 10", "theme": "Day 3 — The Road to LA2028", "rows": [["7:00 – 8:00 AM", "band", "Fun Run 5K"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 9:45 AM", "key", "2026 State of the Sport Survey Presentation"], ["9:45 – 10:30 AM", "key", "USA Triathlon 2026 Behavioral Data and Trends"], ["10:30 – 11:30 AM", "key", "Panel Discussion: State of the Sport, Data and Trends"], ["11:30 AM – 12:30 PM", "band", "Networking Break + Lunch on own — Sponsor Opportunity (only if partner willing to pay)"], ["12:30 – 1:30 PM", "key", "Action Brainstorming — how to make material come to life"], ["1:45 – 2:30 PM", "sess", 13], ["2:45 – 3:30 PM", "sess", 14]]}};
 const KEYNOTES = [];
 for(const d of ["1","2","3"]) for(const r of DAY_META[d].rows) if(r[1]==="key") KEYNOTES.push(r[2]);
@@ -442,16 +442,16 @@ function build(openKeys){
     for(const [time,type,label] of meta.rows){
       const rowClass = (type==="sess") ? "slotrow" : "bandrow";
       html += `<tr class="${rowClass}"><td class="time">${esc(time)}</td>`;
-      if(type==="band"){ html += `<td class="band" colspan="4">${esc(label)}</td>`; }
+      if(type==="band"){ html += `<td class="band" colspan="${ROOMS.length}">${esc(label)}</td>`; }
       else if(type==="key"){
         kCounter++; const kid = "k"+kCounter;
         const ks = findSession(kid);
         let inner = `<div class="key-label">${esc(label)} <span class="badge">${kid.toUpperCase()}</span></div>`;
         if(ks){ inner += cardHTML(ks, false); }
-        html += `<td class="keynote" colspan="4">${inner}</td>`;
+        html += `<td class="keynote" colspan="${ROOMS.length}">${inner}</td>`;
       }
       else{
-        for(let i=0;i<4;i++){
+        for(let i=0;i<ROOMS.length;i++){
           const slot = label + LETTERS[i];
           const s = findSession(slot);
           if(s) html += `<td class="slotcell">${cardHTML(s, true)}</td>`;
@@ -478,7 +478,7 @@ function build(openKeys){
   openKeys.forEach(k=>{ const el=document.querySelector(`.card[data-key="${CSS.escape(k)}"]`); if(el) el.classList.add("open"); });
   const n = SESSIONS.filter(s=>s.slot).length;
   const nHidden = SESSIONS.filter(s=>s.not_selected).length;
-  document.getElementById("assign-count").textContent = n + " of 62 slots assigned (56 sessions + 6 keynotes)  •  " + (SESSIONS.length-n-nHidden) + " sessions unassigned" + (nHidden?"  •  "+nHidden+" not selected (hidden here — manage on Session Intake)":"") + "  •  shared live with everyone viewing this page";
+  document.getElementById("assign-count").textContent = n + " of " + (LETTERS.length*14+KEYNOTES.length) + " slots assigned (" + (LETTERS.length*14) + " sessions + " + KEYNOTES.length + " keynotes)  •  " + (SESSIONS.length-n-nHidden) + " sessions unassigned" + (nHidden?"  •  "+nHidden+" not selected (hidden here — manage on Session Intake)":"") + "  •  shared live with everyone viewing this page";
 }
 // ---------- signup roster ----------
 let ADMIN_CACHE = null, ADMIN_CACHE_AT = 0;

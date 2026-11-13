@@ -91,8 +91,8 @@ footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:c
 const SUPA_URL="https://vzwpdsnxstazpfukdbak.supabase.co";
 const SUPA_KEY="sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
 const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
-const ROOMS=["Caribbean Ballroom IV–VI (400)","Boca I & II (85)","Boca V & VI (85)","Boca III & IV (85)"];
-const LETTERS=["a","b","c","d"];
+const ROOMS=["Caribbean Ballroom IV–VI (400)","Boca I & II (85)","Boca V & VI (85)","Boca III & IV (85)","Caribbean I–III (85)"];
+const LETTERS=["a","b","c","d","e"];
 const DAY_META = {"1": {"date":"Friday, January 8","rows":[["9:00 – 9:45 AM","sess",1],["10:00 – 10:45 AM","sess",2],["12:00 – 1:00 PM","key",1],["1:00 – 1:45 PM","sess",3],["2:00 – 2:45 PM","sess",4],["4:00 – 4:45 PM","sess",5],["5:00 – 5:45 PM","sess",6]]},
 "2":{"date":"Saturday, January 9","rows":[["9:00 – 10:00 AM","key",2],["10:00 – 10:45 AM","sess",7],["11:00 – 11:45 AM","sess",8],["1:00 – 1:45 PM","sess",9],["2:00 – 2:45 PM","sess",10],["4:00 – 4:45 PM","sess",11],["5:00 – 5:45 PM","sess",12]]},
 "3":{"date":"Sunday, January 10","rows":[["9:00 – 9:45 AM","key",3],["9:45 – 10:30 AM","key",4],["10:30 – 11:30 AM","key",5],["12:30 – 1:30 PM","key",6],["1:45 – 2:30 PM","sess",13],["2:45 – 3:30 PM","sess",14]]}};
@@ -101,7 +101,7 @@ const SLOTINFO={};const DAYDATES={};
   for(const d of ["1","2","3"]){
     DAYDATES[d]=DAY_META[d].date;
     DAY_META[d].rows.forEach(([time,type,n],ord)=>{
-      if(type==="sess")for(let i=0;i<4;i++)SLOTINFO[n+LETTERS[i]]={day:d,time,room:ROOMS[i],ord};
+      if(type==="sess")for(let i=0;i<ROOMS.length;i++)SLOTINFO[n+LETTERS[i]]={day:d,time,room:ROOMS[i],ord};
       else SLOTINFO["k"+n]={day:d,time,room:"General Session — "+ROOMS[0],ord};
     });
   }

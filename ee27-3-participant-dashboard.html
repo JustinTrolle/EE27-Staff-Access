@@ -177,15 +177,15 @@ footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:c
 const SUPA_URL="https://vzwpdsnxstazpfukdbak.supabase.co";
 const SUPA_KEY="sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
 const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
-const ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV"];
-const LETTERS=["a","b","c","d"];
+const ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV","Caribbean I–III"];
+const LETTERS=["a","b","c","d","e"];
 const DAY_META = {"1": {"date": "Friday, January 8", "theme": "Day 1 — Innovation and Intelligence", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout"], ["8:00 – 11:00 AM", "band", "Packet Pickup"], ["9:00 – 9:45 AM", "sess", 1], ["10:00 – 10:45 AM", "sess", 2], ["11:00 AM – 12:00 PM", "band", "Light Lunch"], ["12:00 – 1:00 PM", "key", "Artificial Intelligence & Innovation Keynote"], ["1:00 – 1:45 PM", "sess", 3], ["2:00 – 2:45 PM", "sess", 4], ["3:00 – 3:45 PM", "band", "Networking Time — Expo Engagement"], ["4:00 – 4:45 PM", "sess", 5], ["5:00 – 5:45 PM", "sess", 6], ["6:00 – 7:00 PM", "band", "Partner Happy Hour"]]}, "2": {"date": "Saturday, January 9", "theme": "Day 2 — Human Connection and Community", "rows": [["7:00 – 8:00 AM", "band", "Morning Group Workout"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 10:00 AM", "key", "Human Connection and Community Keynote"], ["10:00 – 10:45 AM", "sess", 7], ["11:00 – 11:45 AM", "sess", 8], ["12:00 – 1:00 PM", "band", "Lunch"], ["1:00 – 1:45 PM", "sess", 9], ["2:00 – 2:45 PM", "sess", 10], ["3:00 – 3:45 PM", "band", "Networking Break"], ["4:00 – 4:45 PM", "sess", 11], ["5:00 – 5:45 PM", "sess", 12], ["6:00 – 7:00 PM", "band", "Partner Happy Hour"]]}, "3": {"date": "Sunday, January 10", "theme": "Day 3 — The Road to LA2028", "rows": [["7:00 – 8:00 AM", "band", "Fun Run 5K"], ["8:00 – 9:00 AM", "band", "Breakfast"], ["9:00 – 9:45 AM", "key", "2026 State of the Sport Survey Presentation"], ["9:45 – 10:30 AM", "key", "USA Triathlon 2026 Behavioral Data and Trends"], ["10:30 – 11:30 AM", "key", "Panel Discussion: State of the Sport, Data and Trends"], ["11:30 AM – 12:30 PM", "band", "Networking Break + Lunch on own"], ["12:30 – 1:30 PM", "key", "Action Brainstorming"], ["1:45 – 2:30 PM", "sess", 13], ["2:45 – 3:30 PM", "sess", 14]]}};
 // slot -> {day,time} lookup built from DAY_META
 const SLOTINFO={};
 (function(){
   for(const d of ["1","2","3"]){let k=0;
     for(const[time,type,label]of DAY_META[d].rows){
-      if(type==="sess"){for(let i=0;i<4;i++)SLOTINFO[label+LETTERS[i]]={day:d,time,room:ROOMS[i]};}
+      if(type==="sess"){for(let i=0;i<ROOMS.length;i++)SLOTINFO[label+LETTERS[i]]={day:d,time,room:ROOMS[i]};}
     }
   }
   let k=0;
@@ -406,7 +406,7 @@ function dayHTML(d){
       h+=`</div></div>`;
     }else{
       const cards=[];
-      for(let i=0;i<4;i++){const s=bySlot(label+LETTERS[i]);if(s)cards.push(cardHTML(s,ROOMS[i],false));}
+      for(let i=0;i<ROOMS.length;i++){const s=bySlot(label+LETTERS[i]);if(s)cards.push(cardHTML(s,ROOMS[i],false));}
       h+=`<div class="timeblock"><div class="th">${esc(time)} — CONCURRENT SESSIONS</div><div class="tb-body">`;
       h+=cards.length?cards.join(""):`<div class="empty">Sessions for this time are still being finalized.</div>`;
       h+=`</div></div>`;

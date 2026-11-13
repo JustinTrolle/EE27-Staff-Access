@@ -260,7 +260,7 @@ async function backupAll(){
   bkStatus("Downloaded "+folderName+".zip — move it to your backup drive. "+summary+".",true);
 }
 // ---------- locked-sessions Excel export ----------
-const XL_ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV"];
+const XL_ROOMS=["Caribbean Ballroom IV–VI","Boca I & II","Boca V & VI","Boca III & IV","Caribbean I–III"];
 const XL_DAYS={"1":"Friday, Jan 8","2":"Saturday, Jan 9","3":"Sunday, Jan 10"};
 const XL_TIMES={1:"9:00 – 9:45 AM",2:"10:00 – 10:45 AM",3:"1:00 – 1:45 PM",4:"2:00 – 2:45 PM",5:"4:00 – 4:45 PM",6:"5:00 – 5:45 PM",
   7:"10:00 – 10:45 AM",8:"11:00 – 11:45 AM",9:"1:00 – 1:45 PM",10:"2:00 – 2:45 PM",11:"4:00 – 4:45 PM",12:"5:00 – 5:45 PM",13:"1:45 – 2:30 PM",14:"2:45 – 3:30 PM"};
@@ -270,7 +270,7 @@ const XL_ORD={"1":["1","2","k1","3","4","5","6"],"2":["k2","7","8","9","10","11"
 function xlSlotInfo(slot){
   if(slot[0]==="k"){const k=XL_KEY[slot];return k?{day:k[0],time:k[1],room:"General Session – Caribbean Ballroom",ord:XL_ORD[k[0]].indexOf(slot),letter:""}:null}
   const n=parseInt(slot),L=slot.slice(String(n).length);const day=n<=6?"1":n<=12?"2":"3";
-  return {day,time:XL_TIMES[n]||"",room:XL_ROOMS["abcd".indexOf(L)]||"",ord:XL_ORD[day].indexOf(String(n)),letter:L};
+  return {day,time:XL_TIMES[n]||"",room:XL_ROOMS["abcde".indexOf(L)]||"",ord:XL_ORD[day].indexOf(String(n)),letter:L};
 }
 async function exportLocked(){
   if(typeof ExcelJS==="undefined"){alert("The Excel library didn't load — check your connection and reload the page.");return}
