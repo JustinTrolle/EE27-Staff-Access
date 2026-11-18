@@ -105,3 +105,14 @@ Stage 4: real-time rollup — planned vs checked-in vs scores, feedback wall,
   (`ee27_admin_data`, `ee27_import_sessions`, `ee27_save_session`, `ee27_submit_feedback`).
 - The old `ee2027_schedule` table (used by the previous single-file builder) is left in
   place but is no longer read or written by these pages.
+
+## Session logos
+
+- The logo library lives on the Session Intake page (SESSION LOGOS panel): add a logo once
+  with a name, an image file and the link it opens. Images are trimmed and scaled in the
+  browser and stored in the `ee27_logos` table (publicly readable, writable only through the
+  passcode-checked functions `ee27_save_logo` / `ee27_delete_logo`).
+- Attach a logo to a session with the LOGO dropdown in the intake table or under Details on a
+  Schedule Builder card (`ee27_sessions.logo_id`). Deleting a logo removes it from its sessions.
+- The Participant Dashboard shows the logo in the bottom right corner of the session card,
+  sized so every logo takes up about the same area, and opens the link in a new tab.

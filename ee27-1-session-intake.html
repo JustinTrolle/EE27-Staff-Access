@@ -57,6 +57,17 @@ table.rpt tr.locked td{background:#DCEFE0 !important}
 table.rpt tr.locked td:first-child b::after{content:" 🔒";font-size:.7rem}
 table.rpt tr.notsel td{background:#F5DDE2 !important}
 table.rpt tr.notsel td:first-child b{color:var(--usat-red)}
+.logo-grid{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 14px}
+.logo-tile{border:1px solid var(--usat-gray-border);border-radius:4px;background:#fff;padding:10px;width:230px;font-size:.76rem}
+.logo-tile .pv{height:64px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--usat-gray-border);border-radius:3px;margin-bottom:8px;background:#fff}
+.logo-tile .pv img{display:block;object-fit:contain}
+.logo-tile .nm{font-weight:bold;color:var(--usat-blue);font-size:.82rem}
+.logo-tile .lk{display:block;color:var(--usat-gray-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0}
+.logo-tile .bt{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.logo-tile .bt .btn{padding:3px 8px;font-size:.58rem}
+.logo-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--usat-gray-border);padding-top:12px}
+.logo-add input[type=text]{padding:7px 9px;border:1px solid var(--usat-gray-border);border-radius:3px;font-size:.82rem;font-family:var(--font-body);width:220px}
+.logo-add input[type=file]{font-size:.76rem;max-width:230px}
 .chip{display:inline-block;font-family:var(--font-heading);font-size:.6rem;letter-spacing:.5px;padding:2px 8px;border-radius:3px;color:#fff}
 .chip.new{background:var(--usat-red)}
 .chip.match{background:var(--usat-blue)}
@@ -89,7 +100,7 @@ const SUPA_KEY="sb_publishable_boHol6--f9_CgCSq1jyaSg_OuI42zyv";
 const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
 const SHEET_ID="1gFTyB-rV0xvlsaoJ_6WKOGuEXrmEArtinOt9_KXpriw";
 let PASS=sessionStorage.getItem("ee27_admin_pass")||"";
-let EXISTING=[], PARSED=null, PLAN=null;
+let EXISTING=[], PARSED=null, PLAN=null, LOGOS=[];
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 const norm=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 const lastName=s=>{const p=(s||"").trim().split(/\s+/);return norm(p[p.length-1]||"")};
@@ -118,8 +129,14 @@ async function login(){
 }
 // ---------- main ----------
 async function loadExisting(){
-  const r=await fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,sheet_sig,slot,day,source,folder,fmt,track,coach_track,summary,takeaways,not_selected,contract_sent,contract_signed,content_uploaded,content_created,locked_in&order=title",{headers:H});
+  const r=await fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,sheet_sig,slot,day,source,folder,fmt,track,coach_track,summary,takeaways,not_selected,contract_sent,contract_signed,content_uploaded,content_created,locked_in,logo_id&order=title",{headers:H});
   EXISTING=r.ok?await r.json():[];
+}
+async function loadLogos(){
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/ee27_logos?select=id,name,link,image,w,h&order=name",{headers:H});
+    if(r.ok)LOGOS=await r.json();
+  }catch(e){}
 }
 function byKey(key){return EXISTING.find(s=>s.key===key)}
 async function saveSession(key,patch){
@@ -130,7 +147,7 @@ async function saveSession(key,patch){
   }catch(e){alert("Save failed — network problem.");return false}
 }
 async function start(){
-  await loadExisting();
+  await Promise.all([loadExisting(),loadLogos()]);
   render();
 }
 function render(){
@@ -160,12 +177,13 @@ function render(){
     </div>
   </div>
   <div id="preview"></div>
+  ${logoPanelHTML()}
   <h3 class="sec">CURRENT DATABASE <span class="stamp">(${EXISTING.length} sessions · ${EXISTING.filter(s=>s.not_selected).length} not selected · ${EXISTING.filter(s=>s.folder).length} with folders · contracts: ${EXISTING.filter(s=>s.contract_sent).length} sent / ${EXISTING.filter(s=>s.contract_signed).length} signed · content: ${EXISTING.filter(s=>s.content_uploaded).length} uploaded / ${EXISTING.filter(s=>s.content_created).length} created)</span>
   <div class="stamp" style="margin-top:4px;font-weight:bold;color:var(--usat-blue)">Presenter tracks: ${["T1","T2","T3","T4","AT"].map(t=>`${t} <span style="background:var(--usat-blue-tint);padding:1px 7px;border-radius:8px">${EXISTING.filter(s=>s.coach_track===t).length}</span>`).join(" &nbsp; ")} &nbsp; <span style="font-weight:normal">· ${EXISTING.filter(s=>!s.coach_track).length} unassigned</span></div></h3>
-  <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
-  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Presenter track level (T1–T4, or AT = All Tracks)">PRESENTER<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
+  <div class="hint">Click a session title to see its summary and key takeaways. Track, Format, Logo, and the Contract/Content checkboxes save instantly when changed. Uploading a new CSV only ADDS new submissions — nothing you set here (track, format, folder, day, slot, checkboxes) is ever overwritten by an import.</div>
+  <div style="overflow-x:auto"><table class="rpt"><tr><th>SESSION</th><th>SPEAKER</th><th>TRACK</th><th class="num" title="Presenter track level (T1–T4, or AT = All Tracks)">PRESENTER<br>TRACK</th><th>FORMAT</th><th>DAY</th><th>SLOT</th><th>PRESENTER FOLDER</th><th title="Logo shown in the bottom right corner of this session's card on the Participant Dashboard">LOGO</th><th class="num" title="Session was reviewed but not chosen for the schedule">NOT<br>SELECTED</th><th class="num" title="EE27 contract has been sent to the presenter">CONTRACT<br>SENT</th><th class="num" title="Presenter has signed their EE27 contract">CONTRACT<br>SIGNED</th><th class="num" title="Presenter has uploaded their digital content">CONTENT<br>UPLOADED</th><th class="num" title="Digital content has been created">DIGITAL<br>CREATED</th></tr>
   ${EXISTING.map(dbRowHTML).join("")}
-  <tr style="background:var(--usat-blue-tint)"><td colspan="8" style="text-align:right;font-family:var(--font-heading);font-size:.66rem;letter-spacing:.5px;color:var(--usat-blue)"><span style="float:left;color:#1B6E3C">🔒 LOCKED SESSIONS: ${EXISTING.filter(s=>s.locked_in&&!s.not_selected).length}</span>TOTALS</td>${["not_selected","contract_sent","contract_signed","content_uploaded","content_created"].map(f=>`<td class="num" style="font-weight:bold;color:var(--usat-blue)">${EXISTING.filter(s=>s[f]).length}</td>`).join("")}</tr>
+  <tr style="background:var(--usat-blue-tint)"><td colspan="9" style="text-align:right;font-family:var(--font-heading);font-size:.66rem;letter-spacing:.5px;color:var(--usat-blue)"><span style="float:left;color:#1B6E3C">🔒 LOCKED SESSIONS: ${EXISTING.filter(s=>s.locked_in&&!s.not_selected).length}</span>TOTALS</td>${["not_selected","contract_sent","contract_signed","content_uploaded","content_created"].map(f=>`<td class="num" style="font-weight:bold;color:var(--usat-blue)">${EXISTING.filter(s=>s[f]).length}</td>`).join("")}</tr>
   </table></div>
   <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
     <button class="btn" onclick="exportLocked()">⬇ DOWNLOAD LOCKED SESSIONS (EXCEL)</button>
@@ -200,6 +218,8 @@ async function bkCollect(){
   ]);
   if(!rs.ok||!ra.ok)throw new Error("Could not read the database (check passcode / connection).");
   const sessions=await rs.json(),admin=await ra.json();
+  let logos=[];
+  try{const rl=await fetch(SUPA_URL+"/rest/v1/ee27_logos?select=*&order=name",{headers:H});if(rl.ok)logos=await rl.json()}catch(e){}
   const tables={sessions,contacts:admin.contacts||[],attendees:admin.attendees||[],selections:admin.selections||[],
     attendance:admin.attendance||[],feedback:admin.feedback||[],event_survey:admin.event_survey||[]};
   const files=[];
@@ -207,6 +227,9 @@ async function bkCollect(){
     files.push(["data/"+name+".json",JSON.stringify(rows,null,1)]);
     if(rows.length)files.push(["data/"+name+".csv",String.fromCharCode(65279)+toCSV(rows)]);
   }
+  // logo images are long text, so the full export is JSON; the CSV lists them without the image
+  files.push(["data/logos.json",JSON.stringify(logos,null,1)]);
+  if(logos.length)files.push(["data/logos.csv",String.fromCharCode(65279)+toCSV(logos.map(l=>({id:l.id,name:l.name,link:l.link,w:l.w,h:l.h,created_at:l.created_at,updated_at:l.updated_at})))]);
   for(const f of BK_FILES){
     try{const r=await fetch(f,{cache:"no-store"});if(r.ok)files.push(["site/"+f,await r.text()])}catch(e){}
   }
@@ -310,6 +333,136 @@ async function exportLocked(){
   a.download="EE27 Locked Sessions - "+new Date().toISOString().slice(0,10)+".xlsx";
   a.click();URL.revokeObjectURL(a.href);
 }
+// ---------- session logo library ----------
+const isHttp=u=>/^https?:[/][/]/i.test(u||"");
+// same sizing rule as the Participant Dashboard, so the preview is true to life
+function logoBox(l){
+  const r=(l.w&&l.h)?l.w/l.h:3;
+  let h=Math.sqrt(4800/r),w=h*r;
+  if(h>52){h=52;w=h*r}
+  if(w>132){w=132;h=w/r}
+  return [Math.max(1,Math.round(w)),Math.max(1,Math.round(h))];
+}
+function logoPanelHTML(){
+  const uses=id=>EXISTING.filter(s=>s.logo_id===id).length;
+  return `<h3 class="sec">SESSION LOGOS <span class="stamp">(${LOGOS.length} in the library · ${EXISTING.filter(s=>s.logo_id).length} sessions showing a logo)</span></h3>
+  <div class="panel">
+    <p>Add a logo once, then attach it to any session with the <b>LOGO</b> dropdown in the table below (or under Details on a Schedule Builder card). It shows in the bottom right corner of that session's card on the Participant Dashboard and opens the link when tapped. Blank edges are trimmed and every logo is sized to take up about the same space, whatever its shape.</p>
+    ${LOGOS.length?`<div class="logo-grid">${LOGOS.map(l=>{const [w,h]=logoBox(l);const n=uses(l.id);return `<div class="logo-tile">
+      <div class="pv"><img src="${esc(l.image)}" alt="${esc(l.name)}" width="${w}" height="${h}"></div>
+      <div class="nm">${esc(l.name)}</div>
+      ${l.link?`<a class="lk" href="${esc(l.link)}" target="_blank" rel="noopener">${esc(l.link)}</a>`:`<span class="lk">No link</span>`}
+      <div class="stamp">On ${n} session${n===1?"":"s"}</div>
+      <div class="bt">
+        <button class="btn ghost" onclick="editLogo('${l.id}')">✎ NAME / LINK</button>
+        <button class="btn ghost" onclick="replaceLogoImage('${l.id}')">🖼 REPLACE IMAGE</button>
+        <button class="btn ghost" style="color:var(--usat-red);border-color:var(--usat-red)" onclick="deleteLogo('${l.id}')">✕ DELETE</button>
+      </div></div>`}).join("")}</div>`:`<p class="stamp">No logos in the library yet.</p>`}
+    <div class="logo-add">
+      <input type="text" id="lg-name" placeholder="Logo name (e.g. TrainingPeaks)">
+      <input type="text" id="lg-link" placeholder="Link it opens (https://…)">
+      <input type="file" id="lg-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+      <button class="btn" onclick="addLogo()">＋ ADD LOGO</button>
+      <span class="stamp" id="lg-status"></span>
+    </div>
+  </div>`;
+}
+function lgStatus(m,ok){const e=document.getElementById("lg-status");if(e){e.textContent=m;e.className=ok===false?"err":ok?"ok":"stamp"}}
+function loadImg(file){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>res(im);
+    im.onerror=()=>rej(new Error("That file could not be read as an image."));
+    im.src=u;
+  });
+}
+// trims blank edges, scales the logo down and returns it as a compact image the database can hold
+async function processLogo(file){
+  const im=await loadImg(file);
+  let W=im.naturalWidth,H=im.naturalHeight;
+  if(!W||!H)throw new Error("That image has no size information. Please use a PNG or JPG.");
+  const cap=1400/Math.max(W,H);
+  if(cap<1){W=Math.round(W*cap);H=Math.round(H*cap)}
+  const c=document.createElement("canvas");c.width=W;c.height=H;
+  const cx=c.getContext("2d");cx.drawImage(im,0,0,W,H);
+  let x0=0,y0=0,x1=W-1,y1=H-1;
+  const d=cx.getImageData(0,0,W,H).data;
+  const clear=d[3]<16, white=!clear&&d[0]>232&&d[1]>232&&d[2]>232;
+  if(clear||white){ // only trim transparent or white surrounds; coloured backgrounds are part of the logo
+    const blank=i=>d[i+3]<16||(white&&d[i]>232&&d[i+1]>232&&d[i+2]>232);
+    let a=W,b=H,e=-1,f=-1;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      if(!blank((y*W+x)*4)){if(x<a)a=x;if(x>e)e=x;if(y<b)b=y;if(y>f)f=y}
+    }
+    if(e>=0){x0=a;y0=b;x1=e;y1=f}
+  }
+  const cw=x1-x0+1,ch=y1-y0+1;
+  const sc=Math.min(1,420/cw,210/ch);
+  const ow=Math.max(1,Math.round(cw*sc)),oh=Math.max(1,Math.round(ch*sc));
+  const o=document.createElement("canvas");o.width=ow;o.height=oh;
+  const ox=o.getContext("2d");ox.imageSmoothingQuality="high";
+  ox.drawImage(c,x0,y0,cw,ch,0,0,ow,oh);
+  let url=o.toDataURL("image/png");
+  if(url.length>300000)url=o.toDataURL("image/webp",0.9);
+  if(url.length>590000)throw new Error("That image is too detailed to store. Try a simpler PNG.");
+  return {image:url,w:ow,h:oh};
+}
+async function saveLogo(body){
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_save_logo",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS,...body})});
+    if(!r.ok){alert("Logo could not be saved. Check your connection and passcode.");return false}
+    return true;
+  }catch(e){alert("Logo could not be saved (network problem).");return false}
+}
+async function addLogo(){
+  const name=document.getElementById("lg-name").value.trim();
+  const link=document.getElementById("lg-link").value.trim();
+  const f=document.getElementById("lg-file").files[0];
+  if(!name){lgStatus("Give the logo a name first.",false);return}
+  if(link&&!isHttp(link)){lgStatus("The link should start with https://",false);return}
+  if(!f){lgStatus("Choose the logo image file.",false);return}
+  lgStatus("Preparing image…");
+  try{
+    const p=await processLogo(f);
+    if(!await saveLogo({p_id:null,p_name:name,p_link:link,p_image:p.image,p_w:p.w,p_h:p.h})){lgStatus("");return}
+    await loadLogos();render();
+    lgStatus("Added "+name+". Attach it to sessions with the LOGO dropdown below.",true);
+  }catch(e){lgStatus(e.message||"Could not add that logo.",false)}
+}
+async function editLogo(id){
+  const l=LOGOS.find(x=>x.id===id);if(!l)return;
+  const name=prompt("Logo name:",l.name);
+  if(name===null)return;
+  if(!name.trim()){alert("The logo needs a name.");return}
+  const link=prompt("Link this logo opens when tapped (leave empty for no link):",l.link||"");
+  if(link===null)return;
+  if(link.trim()&&!isHttp(link.trim())){alert("That doesn't look like a link. It should start with https://");return}
+  if(await saveLogo({p_id:id,p_name:name.trim(),p_link:link.trim()})){await loadLogos();render();}
+}
+function replaceLogoImage(id){
+  const l=LOGOS.find(x=>x.id===id);if(!l)return;
+  const inp=document.createElement("input");
+  inp.type="file";inp.accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml";
+  inp.onchange=async()=>{
+    if(!inp.files[0])return;
+    try{
+      const p=await processLogo(inp.files[0]);
+      if(await saveLogo({p_id:id,p_name:l.name,p_link:l.link||"",p_image:p.image,p_w:p.w,p_h:p.h})){await loadLogos();render();}
+    }catch(e){alert(e.message||"Could not use that image.")}
+  };
+  inp.click();
+}
+async function deleteLogo(id){
+  const l=LOGOS.find(x=>x.id===id);if(!l)return;
+  const n=EXISTING.filter(s=>s.logo_id===id).length;
+  if(!confirm('Delete the "'+l.name+'" logo?'+(n?" It is on "+n+" session"+(n===1?"":"s")+" and will be removed from "+(n===1?"it":"them")+".":"")+" This cannot be undone."))return;
+  try{
+    const r=await fetch(SUPA_URL+"/rest/v1/rpc/ee27_delete_logo",{method:"POST",headers:H,body:JSON.stringify({p_pass:PASS,p_id:id})});
+    if(!r.ok){alert("Delete failed. Check your connection and passcode.");return}
+    EXISTING.forEach(s=>{if(s.logo_id===id)s.logo_id=null});
+    await loadLogos();render();
+  }catch(e){alert("Delete failed (network problem).")}
+}
 // ---------- current database table ----------
 const TRACKS=[["coach","Coach"],["rd","Race Director"],["industry","Industry Expert"]];
 const FORMATS=["Presentation","Keynote","Panel Discussion","Workshop / Hands-On","Breakout Session"];
@@ -333,6 +486,9 @@ function dbRowHTML(s){
       ?`<a href="${esc(s.folder)}" target="_blank" rel="noopener" style="color:#1B6E3C;font-weight:bold;font-size:.74rem">🔗 OPEN</a>
         <button class="btn ghost" style="padding:3px 8px;font-size:.6rem;margin-left:6px" onclick="editFolder('${esc(s.key)}')">✎ EDIT</button>`
       :`<button class="btn" style="padding:4px 9px;font-size:.6rem" onclick="editFolder('${esc(s.key)}')">＋ ADD LINK</button>`}</td>
+    <td><select onchange="setField('${esc(s.key)}','logo_id',this.value)" style="font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;max-width:130px${s.logo_id?";font-weight:bold;color:#1B6E3C":""}">
+      <option value="">–</option>
+      ${LOGOS.map(l=>`<option value="${l.id}" ${s.logo_id===l.id?"selected":""}>${esc(l.name)}</option>`).join("")}</select></td>
     <td class="num"><input type="checkbox" ${s.not_selected?"checked":""} onchange="setCheck('${esc(s.key)}','not_selected',this)" style="width:16px;height:16px;accent-color:#A80C34;cursor:pointer" title="Reviewed but not chosen"></td>
     <td class="num"><input type="checkbox" ${s.contract_sent?"checked":""} onchange="setCheck('${esc(s.key)}','contract_sent',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Contract sent"></td>
     <td class="num"><input type="checkbox" ${s.contract_signed?"checked":""} onchange="setCheck('${esc(s.key)}','contract_signed',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Contract signed"></td>
@@ -340,7 +496,7 @@ function dbRowHTML(s){
     <td class="num"><input type="checkbox" ${s.content_created?"checked":""} onchange="setCheck('${esc(s.key)}','content_created',this)" style="width:16px;height:16px;accent-color:#1B6E3C;cursor:pointer" title="Digital content created"></td>
   </tr>`;
   if(OPEN_ROWS.has(s.key)){
-    h+=`<tr class="${s.not_selected?"notsel":s.locked_in?"locked":""}"><td colspan="13" style="background:#F8FAFC;padding:12px 16px">
+    h+=`<tr class="${s.not_selected?"notsel":s.locked_in?"locked":""}"><td colspan="14" style="background:#F8FAFC;padding:12px 16px">
       ${s.summary?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">SUMMARY</div><p style="font-size:.8rem;line-height:1.5;margin-bottom:10px">${esc(s.summary)}</p>`:""}
       ${takeaways.length?`<div style="font-family:var(--font-heading);font-size:.68rem;color:var(--usat-red);letter-spacing:.5px;margin-bottom:4px">KEY TAKEAWAYS</div><ul style="font-size:.8rem;line-height:1.5;padding-left:18px">${takeaways.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
       ${!s.summary&&!takeaways.length?`<span class="stamp">No summary or takeaways on file for this session.</span>`:""}
@@ -356,7 +512,8 @@ async function setField(key,field,val){
   const s=byKey(key);if(!s)return;
   const old=s[field];s[field]=val;
   if(!await saveSession(key,{[field]:val})){s[field]=old;render();return}
-  if(field==="coach_track")render(); // refresh the track tallies in the header
+  if(field==="logo_id"&&!val)s.logo_id=null;
+  if(field==="coach_track"||field==="logo_id")render(); // refresh the tallies
 }
 async function setCheck(key,field,el){
   const s=byKey(key);if(!s)return;

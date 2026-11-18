@@ -69,7 +69,7 @@ header .who a{color:#FFD3DD;cursor:pointer;text-decoration:underline}
 .card.key .acc-body h5{color:#FFD3DD}
 .acc-body p{line-height:1.45}
 .acc-body ul{padding-left:16px;line-height:1.45}
-.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;margin-top:9px}
 .act{font-family:var(--font-heading);font-size:.6rem;letter-spacing:.4px;padding:6px 9px;border-radius:4px;cursor:pointer;border:1px solid var(--usat-blue);background:#fff;color:var(--usat-blue)}
 .act.on{background:var(--usat-blue);color:#fff}
 .act.red{border-color:var(--usat-red);color:var(--usat-red)}
@@ -111,6 +111,9 @@ header .who a{color:#FFD3DD;cursor:pointer;text-decoration:underline}
 .sv-done{font-size:.8rem;color:#1B6E3C;font-weight:bold;text-align:center;margin-top:8px}
 .toast.show{opacity:1}
 footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:center;font-size:.72rem;padding:14px}
+.slogo{margin-left:auto;align-self:flex-end;display:inline-flex;align-items:center;justify-content:center;background:#fff;border-radius:4px;padding:3px 5px;line-height:0;text-decoration:none}
+.slogo img{display:block;object-fit:contain}
+a.slogo:hover{box-shadow:0 0 0 1px var(--usat-gray-border)}
 .tab.print-tab{border-color:var(--usat-red);color:var(--usat-red)}
 .tab.print-tab:hover{background:var(--usat-red);color:#fff}
 /* ---------- TrainingPeaks × EE27 sponsor strip ---------- */
@@ -226,6 +229,7 @@ let SVSAVED={};try{SVSAVED=JSON.parse(localStorage.getItem("ee27_eventsurvey")||
 let ME=null;try{ME=JSON.parse(localStorage.getItem("ee27_attendee")||"null")}catch(e){}
 let MYFB={};try{MYFB=JSON.parse(localStorage.getItem("ee27_myfeedback")||"{}")}catch(e){}
 let SESSIONS=[],SEL=new Set(),COUNTS={},CHK=new Set(),CHKCOUNTS={},TAB="1";
+let LOGOS={}; // id -> {name,link,w,h,updated_at,image}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
 // ---------- registration ----------
@@ -279,13 +283,14 @@ function signout(){
 async function loadAll(){
   try{
     const [rs,rsel,ratt,rsv]=await Promise.all([
-      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,org,fmt,track,day,slot,summary,takeaways&slot=not.is.null",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,org,fmt,track,day,slot,summary,takeaways,logo_id&slot=not.is.null",{headers:H}),
       fetch(SUPA_URL+"/rest/v1/ee27_selections?select=attendee_id,session_key,selected",{headers:H}),
       fetch(SUPA_URL+"/rest/v1/ee27_attendance?select=attendee_id,session_key",{headers:H}),
       fetch(SUPA_URL+"/rest/v1/rpc/ee27_survey_state",{method:"POST",headers:H,body:"{}"})
     ]);
     if(rsv.ok)SVSTATE=await rsv.json();
     if(rs.ok)SESSIONS=await rs.json();
+    await loadLogos();
     COUNTS={};SEL=new Set();
     if(rsel.ok)(await rsel.json()).forEach(s=>{
       if(!s.selected)return;
@@ -298,6 +303,44 @@ async function loadAll(){
       if(ME&&t.attendee_id===ME.id)CHK.add(t.session_key);
     });
   }catch(e){}
+}
+// session logos: details are re-checked each refresh, images are only downloaded when new or changed
+async function loadLogos(){
+  try{
+    const used=new Set(SESSIONS.map(s=>s.logo_id).filter(Boolean));
+    if(!used.size){LOGOS={};return}
+    const r=await fetch(SUPA_URL+"/rest/v1/ee27_logos?select=id,name,link,w,h,updated_at",{headers:H});
+    if(!r.ok)return;
+    const next={},need=[];
+    for(const m of await r.json()){
+      if(!used.has(m.id))continue;
+      const old=LOGOS[m.id];
+      if(old&&old.image&&old.updated_at===m.updated_at)next[m.id]=old;
+      else{next[m.id]={...m,image:old&&old.image};need.push(m.id)}
+    }
+    if(need.length){
+      const ri=await fetch(SUPA_URL+"/rest/v1/ee27_logos?select=id,image&id=in.("+need.join(",")+")",{headers:H});
+      if(ri.ok)(await ri.json()).forEach(x=>{if(next[x.id])next[x.id].image=x.image});
+    }
+    LOGOS=next;
+  }catch(e){}
+}
+// every logo gets about the same visual area, whatever its shape
+function logoBox(l){
+  const r=(l.w&&l.h)?l.w/l.h:3;
+  let h=Math.sqrt(4800/r),w=h*r;
+  if(h>52){h=52;w=h*r}
+  if(w>132){w=132;h=w/r}
+  return [Math.max(1,Math.round(w)),Math.max(1,Math.round(h))];
+}
+function logoHTML(s){
+  const l=s.logo_id&&LOGOS[s.logo_id];
+  if(!l||!l.image)return "";
+  const [w,h]=logoBox(l);
+  const img=`<img src="${esc(l.image)}" alt="${esc(l.name)}" width="${w}" height="${h}">`;
+  return (l.link&&l.link.toLowerCase().indexOf("http")===0)
+    ?`<a class="slogo" href="${esc(l.link)}" target="_blank" rel="noopener" title="${esc(l.name)}" onclick="event.stopPropagation()">${img}</a>`
+    :`<span class="slogo" title="${esc(l.name)}">${img}</span>`;
 }
 function bySlot(slot){return SESSIONS.find(s=>s.slot===slot)}
 // ---------- actions ----------
@@ -379,6 +422,7 @@ function cardHTML(s,room,isKey){
       <button class="act ${sel?"on":""}" onclick="toggleSel('${esc(s.key)}')">${sel?"✓ ON MY SCHEDULE":"☆ ADD TO MY SCHEDULE"}</button>
       <button class="act green ${chk?"on":""}" onclick="checkIn('${esc(s.key)}')" title="${chk?"Tap again to undo an accidental check-in":"Record that you attended this session"}">${chk?"✓ CHECKED IN":"CHECK IN"}</button>
       <button class="act red" onclick="toggleFb('${esc(s.key)}',event)">${done?"✎ EDIT FEEDBACK":"★ GIVE FEEDBACK"}</button>
+      ${logoHTML(s)}
     </div>
     <div class="fbform" onclick="event.stopPropagation()">
       <div class="fr"><label>Session content</label>${stars(s.key,"content")}</div>

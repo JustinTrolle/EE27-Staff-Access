@@ -88,6 +88,10 @@ td.keynote .cstat{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);b
 td.keynote .cstat.on{background:#1B6E3C;color:#fff;border-color:#1B6E3C}
 .signups{display:inline-block;margin-top:6px;font-size:.7rem;font-weight:bold;color:var(--usat-blue);background:var(--usat-blue-tint);border:1px solid var(--usat-gray-border);border-radius:10px;padding:2px 9px;cursor:pointer}
 .signups:hover{background:var(--usat-blue);color:#fff}
+.logotag{display:inline-block;margin-top:6px;margin-left:4px;font-size:.66rem;font-weight:bold;color:#1B6E3C;background:#E6F3E8;border:1px solid #B9D9C0;border-radius:10px;padding:2px 8px}
+.logo-pick{margin-top:10px;font-size:.7rem;font-weight:bold;color:var(--usat-gray-mid);letter-spacing:.4px}
+.logo-pick select{font-size:.74rem;padding:3px;border:1px solid var(--usat-gray-border);border-radius:3px;margin-left:4px;max-width:170px}
+td.keynote .logo-pick{color:rgba(255,255,255,.8)}
 .signups.zero{opacity:.55}
 td.keynote .signups{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}
 td.keynote .signups:hover{background:#fff;color:var(--usat-blue-dark)}
@@ -152,7 +156,7 @@ footer{background:var(--usat-blue-dark);color:rgba(255,255,255,.75);text-align:c
 .sync-status.sync-ok{color:#1B6E3C}
 .sync-status.sync-off{color:var(--usat-red)}
 @media print{
-  .dl-btn,.toolbar,.assign-count,.sync-status,.legend,.pool,.card-foot,.acc-toggle,.stagebar,.signups,.modal-bg,.cstat{display:none !important}
+  .dl-btn,.toolbar,.assign-count,.sync-status,.legend,.pool,.card-foot,.acc-toggle,.stagebar,.signups,.modal-bg,.cstat,.logotag,.logo-pick{display:none !important}
   .day-block{page-break-after:always}
   header{padding:12px 20px}
   header .logo{height:50px}
@@ -225,12 +229,15 @@ async function login(){
 }
 // ---------- data ----------
 let COUNTS = {};
+let LOGOS = []; // [{id,name}] from the logo library on the Session Intake page
 async function loadSessions(){
   try{
-    const [r, rs] = await Promise.all([
-      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,org,fmt,track,day,slot,summary,takeaways,notes,folder,status,not_selected,contract_sent,contract_sent_via,contract_signed,locked_in&order=title",{headers:H}),
-      fetch(SUPA_URL+"/rest/v1/ee27_selections?select=session_key,selected",{headers:H})
+    const [r, rs, rl] = await Promise.all([
+      fetch(SUPA_URL+"/rest/v1/ee27_sessions?select=key,title,speaker,org,fmt,track,day,slot,summary,takeaways,notes,folder,status,not_selected,contract_sent,contract_sent_via,contract_signed,locked_in,logo_id&order=title",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/ee27_selections?select=session_key,selected",{headers:H}),
+      fetch(SUPA_URL+"/rest/v1/ee27_logos?select=id,name&order=name",{headers:H})
     ]);
+    if(rl.ok) LOGOS = await rl.json();
     if(!r.ok){ setSyncStatus("Sync error — could not load sessions", false); return; }
     SESSIONS = await r.json();
     if(rs.ok){
@@ -267,7 +274,7 @@ function cardHTML(s, showSlot){
     <span class="cstat click ${s.contract_sent?(s.contract_sent_via==="builder"?"onb":"on"):""}" onclick="toggleSent('${esc(s.key)}')" title="${s.contract_sent?(s.contract_sent_via==="builder"?"Contract marked sent from the Schedule Builder — click to unmark":"Contract marked sent from the Session Intake page — click to unmark"):"Click to mark the EE27 contract as sent"}">${s.contract_sent?"☑":"☐"} SENT</span>
     <span class="cstat ${s.contract_signed?"on":""}" title="${s.contract_signed?"Presenter has signed — confirmed to speak":"Contract not received yet — tracked on the Session Intake page"}">${s.contract_signed?"☑":"☐"} SIGNED</span>
     <span class="cstat click ${s.locked_in?"lock":""}" onclick="toggleLocked('${esc(s.key)}')" title="${s.locked_in?"This session is locked in place — click to unlock":"Click to lock this session in place so you know it should not move"}">${s.locked_in?"🔒 LOCKED":"☐ LOCK"}</span><br>
-    <span class="signups ${COUNTS[s.key]?"":"zero"}" onclick="showSignups('${esc(s.key)}')" title="Click to see who signed up and export the list">👥 ${COUNTS[s.key]||0} signed up</span><br>
+    <span class="signups ${COUNTS[s.key]?"":"zero"}" onclick="showSignups('${esc(s.key)}')" title="Click to see who signed up and export the list">👥 ${COUNTS[s.key]||0} signed up</span>${logoName(s)?`<span class="logotag" title="This logo shows on the session's card on the Participant Dashboard">🏷 ${esc(logoName(s))}</span>`:""}<br>
     <span class="acc-toggle" onclick="toggle('${esc(s.key)}')">Details</span>
     <div class="acc-body">
       <h5>Summary</h5><p>${esc(s.summary)}</p>
@@ -275,6 +282,8 @@ function cardHTML(s, showSlot){
       ${s.notes?`<p class="note">${esc(s.notes)}</p>`:""}
       <button class="dl-btn" onclick="downloadPDF('${esc(s.key)}')">DOWNLOAD PDF</button>
       <button class="dl-btn folder-btn" onclick="editFolder('${esc(s.key)}')">${s.folder?"🔗 EDIT FOLDER LINK":"🔗 ADD FOLDER LINK"}</button>
+      <div class="logo-pick">SESSION LOGO <select onchange="setLogo('${esc(s.key)}',this.value)" title="Logo shown on this session's card on the Participant Dashboard. Add logos on the Session Intake page.">
+        <option value="">None</option>${LOGOS.map(l=>`<option value="${l.id}" ${s.logo_id===l.id?"selected":""}>${esc(l.name)}</option>`).join("")}</select></div>
     </div>
     <div class="card-foot">
       ${s.slot?`<button class="rm-btn" onclick="unassign('${esc(s.key)}')" title="Remove from this slot">✕ REMOVE</button>`:""}
@@ -393,6 +402,13 @@ async function unassign(key){
   s.slot = null; delete pending[key];
   build();
   await saveSession(key, {slot:"", status:"proposed"});
+}
+function logoName(s){ const l = s.logo_id && LOGOS.find(x=>x.id===s.logo_id); return l ? l.name : ""; }
+async function setLogo(key, id){
+  const s = byKey(key); if(!s) return;
+  s.logo_id = id || null;
+  build(openCards());
+  await saveSession(key, {logo_id: id || ""});
 }
 async function editFolder(key){
   const s = byKey(key); if(!s) return;
